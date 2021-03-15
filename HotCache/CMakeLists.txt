@@ -1,3 +1,10 @@
+project(HotCache)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CUDA_STANDARD 17)
+set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+set(CMAKE_CUDA_ARCHITECTURES OFF)
+
 add_subdirectory(KVCache)
 add_subdirectory(HotCacheInterface)
 
