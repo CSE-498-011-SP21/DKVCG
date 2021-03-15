@@ -3,7 +3,7 @@ enable_testing()
 add_library(lslab INTERFACE)
 target_include_directories(lslab INTERFACE include)
 target_link_libraries(lslab INTERFACE allocator)
-target_link_libraries(lslab INTERFACE commonInterfacesCXX)
+target_link_libraries(lslab INTERFACE kvcg_stuff)
 target_link_libraries(lslab INTERFACE commonInterfacesCUDA)
 
 get_target_property(PUBLIC_HEADER_DIR_LSLAB lslab INTERFACE_INCLUDE_DIRECTORIES)

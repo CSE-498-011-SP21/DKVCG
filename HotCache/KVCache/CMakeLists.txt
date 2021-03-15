@@ -1,6 +1,6 @@
 add_library(kvcache INTERFACE)
 target_include_directories(kvcache INTERFACE include)
-target_link_libraries(kvcache INTERFACE TBB::tbb model commonInterfacesCXX pthread)
+target_link_libraries(kvcache INTERFACE TBB::tbb model kvcg_stuff pthread)
 
 get_target_property(PUBLIC_HEADER_DIR_KVCACHE kvcache INTERFACE_INCLUDE_DIRECTORIES)
 file(GLOB_RECURSE PUBLIC_HEADERS_KVCACHE ${PUBLIC_HEADER_DIR_KVCACHE}/*)

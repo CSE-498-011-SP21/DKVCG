@@ -1,7 +1,7 @@
 add_library(communication INTERFACE)
 target_include_directories(communication INTERFACE include)
-target_link_libraries(communication INTERFACE commonInterfacesCXX)
-target_link_libraries(communication INTERFACE fabricBased)
+target_link_libraries(communication INTERFACE kvcg_stuff)
+#target_link_libraries(communication INTERFACE fabricBased)
 
 get_target_property(PUBLIC_HEADER_DIR_COMM communication INTERFACE_INCLUDE_DIRECTORIES)
 file(GLOB_RECURSE PUBLIC_HEADERS_COMM ${PUBLIC_HEADER_DIR_COMM}/*)

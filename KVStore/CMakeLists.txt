@@ -7,7 +7,7 @@ target_link_libraries(kvstore INTERFACE pthread)
 target_link_libraries(kvstore INTERFACE lslab)
 target_link_libraries(kvstore INTERFACE kvcache)
 target_link_libraries(kvstore INTERFACE tbb)
-target_link_libraries(kvstore INTERFACE commonInterfacesCXX)
+target_link_libraries(kvstore INTERFACE kvcg_stuff)
 target_link_libraries(kvstore INTERFACE commonInterfacesCUDA)
 target_link_libraries(kvstore INTERFACE canonicalstore)
 
