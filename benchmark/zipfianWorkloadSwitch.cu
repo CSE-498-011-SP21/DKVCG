@@ -63,7 +63,7 @@ extern "C" int getBatchesToRun() {
 
 extern "C" void initWorkload() {
     flag = false;
-    zetaN = zipf::zeta(zipfianWorkloadConfig.theta, zipfianWorkloadConfig.range);
+    zetaN = cse498::rand::zeta(zipfianWorkloadConfig.theta, zipfianWorkloadConfig.range);
 }
 
 extern "C" void changeWorkload() {
@@ -73,11 +73,11 @@ extern "C" void changeWorkload() {
 extern "C" void initWorkloadFile(std::string filename) {
     flag = false;
     zipfianWorkloadConfig = ZipfianWorkloadConfig(filename);
-    zetaN = zipf::zeta(zipfianWorkloadConfig.theta, zipfianWorkloadConfig.range);
+    zetaN = cse498::rand::zeta(zipfianWorkloadConfig.theta, zipfianWorkloadConfig.range);
 }
 
 unsigned long long genRand(unsigned *seed, int n, double zetaN, double theta, std::atomic_bool &flag) {
-    unsigned long long u = zipf::rand_zipf_r(seed, n, zetaN, theta);
+    unsigned long long u = cse498::rand::rand_zipf_r(seed, n, zetaN, theta);
     if (flag) u = n + 1 - u;
     return u;
 }

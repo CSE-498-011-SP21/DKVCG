@@ -19,7 +19,7 @@ if (DOXYGEN_FOUND)
             MAIN_DEPENDENCY ${DOXYFILE_OUT} ${DOXYFILE_IN}
             COMMENT "Generating docs")
 
-    add_custom_target(Doxygen ALL DEPENDS ${DOXYGEN_INDEX_FILE})
+    add_custom_target(DoxygenDKVCG ALL DEPENDS ${DOXYGEN_INDEX_FILE})
 
     install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doxygen/html DESTINATION share/doc)
 

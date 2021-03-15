@@ -59,12 +59,12 @@ extern "C" int getBatchesToRun() {
 }
 
 extern "C" void initWorkload() {
-    zetaN = zipf::zeta(zipfianWorkloadConfig.theta, zipfianWorkloadConfig.range);
+    zetaN = cse498::rand::zeta(zipfianWorkloadConfig.theta, zipfianWorkloadConfig.range);
 }
 
 extern "C" void initWorkloadFile(std::string filename) {
     zipfianWorkloadConfig = ZipfianWorkloadConfig(filename);
-    zetaN = zipf::zeta(zipfianWorkloadConfig.theta, zipfianWorkloadConfig.range);
+    zetaN = cse498::rand::zeta(zipfianWorkloadConfig.theta, zipfianWorkloadConfig.range);
 }
 
 std::vector<RequestWrapper<unsigned long long, data_t *>>
@@ -75,14 +75,14 @@ generateWorkloadZipfLargeKey(size_t keySize, int size, double theta, int n, doub
 
     for (int i = 0; i < size; i++) {
         if (rand_r(seed) % 100 < ratioOfReads) {
-            vec.push_back({(unsigned long long) zipf::rand_zipf_r(seed, n, zetaN, theta), nullptr, REQUEST_GET});
+            vec.push_back({(unsigned long long) cse498::rand::rand_zipf_r(seed, n, zetaN, theta), nullptr, REQUEST_GET});
         } else {
             if (rand_r(seed) % 100 < 50) {
-                vec.push_back({(unsigned long long) zipf::rand_zipf_r(seed, n, zetaN, theta), new data_t(keySize),
+                vec.push_back({(unsigned long long) cse498::rand::rand_zipf_r(seed, n, zetaN, theta), new data_t(keySize),
                                REQUEST_INSERT});
             } else {
                 vec.push_back(
-                        {(unsigned long long) zipf::rand_zipf_r(seed, n, zetaN, theta), nullptr, REQUEST_REMOVE});
+                        {(unsigned long long) cse498::rand::rand_zipf_r(seed, n, zetaN, theta), nullptr, REQUEST_REMOVE});
             }
         }
 
