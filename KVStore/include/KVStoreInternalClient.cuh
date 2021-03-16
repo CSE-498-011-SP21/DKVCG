@@ -6,19 +6,13 @@
 #include <functional>
 #include <chrono>
 #include <tbb/concurrent_queue.h>
+#include <RequestWrapper.hh>
 
 #ifndef KVGPU_KVSTOREINTERNALCLIENT_CUH
 #define KVGPU_KVSTOREINTERNALCLIENT_CUH
 
 int LOAD_THRESHOLD = BLOCKS * 10000;
 const size_t Q_CAP = 2;
-
-template<typename K, typename V>
-struct RequestWrapper {
-    K key;
-    V value;
-    unsigned requestInteger;
-};
 
 struct block_t {
     std::condition_variable cond;
@@ -156,7 +150,7 @@ public:
 
         //std::cerr << req_vector.size() << std::endl;
         //req_vector.size() % 512 == 0 &&
-        assert(req_vector.size() <= THREADS_PER_BLOCK * BLOCKS * numslabs);
+        //assert(req_vector.size() <= THREADS_PER_BLOCK * BLOCKS * numslabs);
 
         std::vector<std::pair<int, unsigned>> cache_batch_correspondence;
 
@@ -194,7 +188,7 @@ public:
 
         //std::cerr << req_vector.size() << std::endl;
         //req_vector.size() % 512 == 0 &&
-        assert(req_vector.size() <= THREADS_PER_BLOCK * BLOCKS * numslabs);
+        //assert(req_vector.size() <= THREADS_PER_BLOCK * BLOCKS * numslabs);
 
         std::vector<std::pair<int, unsigned>> cache_batch_correspondence;
 
@@ -327,7 +321,7 @@ public:
             auto gpu_batches = std::vector<BatchData<unsigned long long> *>(numslabs);
 
             for (int i = 0; i < numslabs; ++i) {
-                std::shared_ptr<Communication> resBuf = std::make_shared<Communication>(
+                std::shared_ptr<Communication> resBuf = std::make_shared<LocalCommunication>(
                         batchSizeUsed);
                 gpu_batches[i] = new BatchData<unsigned long long>(0,
                                                                    resBuf,
@@ -731,6 +725,7 @@ private:
                        std::shared_ptr<Communication> &resBuf,
                        std::vector<time_point> &times) {
         hits.fetch_add(1, std::memory_order_relaxed);
+        std::cerr << "Sending\n";
         resBuf->send(Response(cache_batch_idx.first, nullptr, false));
         times.push_back(std::chrono::high_resolution_clock::now());
     }

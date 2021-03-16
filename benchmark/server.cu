@@ -200,7 +200,7 @@ int main(int argc, char **argv) {
             retry = false;
             loadBalanceSet = true;
 
-            auto rb = std::make_shared<Communication>(sconf.batchSize);
+            auto rb = std::make_shared<LocalCommunication>(sconf.batchSize);
             auto start = std::chrono::high_resolution_clock::now();
             client->batch(b, rb, start);
 
@@ -319,7 +319,7 @@ int main(int argc, char **argv) {
                 std::cerr << "Changed " << time * 1e3 << "\n";
             }*/
 
-            auto rb = std::make_shared<Communication>(sconf.batchSize);
+            auto rb = std::make_shared<LocalCommunication>(sconf.batchSize);
 
             std::pair<BatchWrapper, RB> p = {
                     generateWorkloadBatch(&tseed, sconf.batchSize),
@@ -339,7 +339,7 @@ int main(int argc, char **argv) {
                     std::cerr << "Changed\n";
                 }*/
 
-                auto rb = std::make_shared<Communication>(sconf.batchSize);
+                auto rb = std::make_shared<LocalCommunication>(sconf.batchSize);
 
                 std::pair<BatchWrapper, RB> p = {
                         generateWorkloadBatch(&tseed, sconf.batchSize),
