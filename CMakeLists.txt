@@ -43,6 +43,21 @@ add_subdirectory(benchmark)
 
 add_subdirectory(docs)
 
+add_executable(dkvcg service/server.cu)
+target_link_libraries(dkvcg PUBLIC lslab)
+target_link_libraries(dkvcg PUBLIC pthread)
+target_link_libraries(dkvcg PUBLIC kvstore)
+target_link_libraries(dkvcg PUBLIC tbbmalloc_proxy)
+target_link_libraries(dkvcg PUBLIC Boost::boost)
+
+add_executable(dkvcg_client service/client.cu)
+target_link_libraries(dkvcg_client PUBLIC lslab)
+target_link_libraries(dkvcg_client PUBLIC pthread)
+target_link_libraries(dkvcg_client PUBLIC kvstore)
+target_link_libraries(dkvcg_client PUBLIC tbbmalloc_proxy)
+target_link_libraries(dkvcg_client PUBLIC Boost::boost)
+
+
 set(KVGPU_TARGETLIST ${KVGPU_TARGETLIST} kvstore rand)
 
 install(TARGETS ${KVGPU_TARGETLIST}
