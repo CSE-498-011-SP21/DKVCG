@@ -9,21 +9,21 @@
 #ifndef KVCG_COMMUNICATION_HH
 #define KVCG_COMMUNICATION_HH
 
-struct Communication {
+struct LocalCommunication {
 
-    explicit Communication(int s) : response(), size(s) {
+    explicit LocalCommunication(int s) : response(), size(s) {
         response.set_capacity(s);
     }
 
-    Communication(const Communication &) = delete;
+    LocalCommunication(const LocalCommunication &) = delete;
 
-    ~Communication() {}
+    ~LocalCommunication() {}
 
-    void send(Response &&r) {
+    inline void send(Response &&r) {
         response.push(r);
     }
 
-    bool try_recv(Response &r) {
+    inline bool try_recv(Response &r) {
         return response.try_pop(r);
     }
 
@@ -31,5 +31,7 @@ struct Communication {
 private:
     tbb::concurrent_bounded_queue<Response> response;
 };
+
+using Communication = LocalCommunication;
 
 #endif //KVCG_RESULTSBUFFERS_HH
