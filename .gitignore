@@ -1,3 +1,7 @@
 /*build*
 /.idea
 .DS_STORE
+/docker_rsa
+/docker_rsa.pub
+!/build.sh
+!/buildDocker.sh

@@ -11,8 +11,20 @@ RUN wget https://github.com/ofiwg/libfabric/releases/download/v1.9.1/libfabric-1
     bunzip2 libfabric-1.9.1.tar.bz2 && tar xf libfabric-1.9.1.tar && cd libfabric-1.9.1 && ./configure && \
     make -j && make install
 
-COPY . /kvcg
+RUN mkdir /root/.ssh
 
-WORKDIR /kvcg
+COPY docker_rsa /root/.ssh/id_rsa
 
-RUN bash ./build.sh
+COPY docker_rsa.pub /root/.ssh/id_rsa.pub
+
+RUN chmod 600 /root/.ssh/id_rsa
+
+RUN touch /root/.ssh/known_hosts
+
+RUN ssh-keyscan github.com >> /root/.ssh/known_hosts
+
+#COPY . /dkvcg
+
+#WORKDIR /dkvcg
+
+#RUN bash ./build.sh
