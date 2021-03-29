@@ -4,6 +4,7 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <RemoteCommunication.hh>
+#include <threadpool.hh>
 
 namespace pt = boost::property_tree;
 using BatchWrapper = std::vector<RequestWrapper<unsigned long long, data_t *>>;
@@ -126,60 +127,84 @@ int main(int argc, char **argv) {
     }
 
     auto server = new cse498::Connection("127.0.0.1", true, 8080);
-    loadBalanceSet = true;
     bool rerun = false;
 
-    auto* clientConnection = new cse498::Connection();
+    cse498::threadpool clientHandler(4);
 
-    do {
-        auto p = server->accept();
-        rerun = !p.first;
-        *clientConnection = std::move(p.second);
-    } while (rerun);
+    std::atomic_bool done = false;
 
-    DO_LOG(TRACE) << "Connection made";
-    uint64_t key = 1;
-    auto* buf = new cse498::unique_buf();
-    clientConnection->register_mr(*buf, FI_READ | FI_WRITE | FI_SEND | FI_RECV, key);
+    std::thread t = std::thread([&]() {
+        while (!done) {
 
-    std::vector<RequestWrapper<unsigned long long int, data_t *>> clientBatch;
+            auto *clientConnection = new cse498::Connection();
 
-    while (true) {
+            do {
+                auto p = server->nonblockingAccept();
+                rerun = !p.first;
+                if (p.first) {
+                    *clientConnection = std::move(p.second);
+                }
+                if (done)
+                    return;
+            } while (rerun);
+            DO_LOG(TRACE) << "Connection made";
 
-        clientConnection->recv(*buf, sizeof(size_t));
-        size_t batchsize = *(size_t *) buf->get();
-        if (batchsize == 0) {
-            delete clientConnection;
-            break;
+            clientHandler.submit([clientConnection, client]() {
+                loadBalanceSet = true;
+
+                uint64_t key = 1;
+                auto *buf = new cse498::unique_buf();
+                clientConnection->register_mr(*buf, FI_READ | FI_WRITE | FI_SEND | FI_RECV, key);
+
+                std::vector<RequestWrapper<unsigned long long int, data_t *>> clientBatch;
+
+                while (true) {
+
+                    clientConnection->recv(*buf, sizeof(size_t));
+                    size_t batchsize = *(size_t *) buf->get();
+                    if (batchsize == 0) {
+                        delete clientConnection;
+                        delete buf;
+                        break;
+                    }
+
+                    clientBatch.reserve(batchsize);
+
+                    while (clientBatch.size() != batchsize) {
+                        clientConnection->recv(*buf, sizeof(size_t));
+                        size_t incomingBytes = *(size_t *) buf->get();
+                        clientConnection->recv(*buf, incomingBytes);
+
+                        size_t offset = 0;
+                        while (offset < incomingBytes) {
+                            size_t amountConsumed = 0;
+                            auto r = deserialize2<RequestWrapper<unsigned long long, data_t *>>(
+                                    std::vector<char>(buf->get() + offset, buf->get() + incomingBytes), amountConsumed);
+                            clientBatch.push_back(r);
+                            offset += amountConsumed;
+                        }
+                    }
+
+                    auto start = std::chrono::high_resolution_clock::now();
+                    std::shared_ptr<Communication> comm = std::make_shared<RemoteCommunication>(clientConnection, buf);
+                    DO_LOG(TRACE) << "Batching";
+                    client->batch(clientBatch, comm, start);
+
+                    std::cerr << "Ran batch\n";
+                }
+            });
         }
+    });
 
-        clientBatch.reserve(batchsize);
+    // wait on input to end
+    std::string ret;
+    std::cin >> ret;
+    done = true;
 
-        while (clientBatch.size() != batchsize) {
-            clientConnection->recv(*buf, sizeof(size_t));
-            size_t incomingBytes = *(size_t *) buf->get();
-            clientConnection->recv(*buf, incomingBytes);
-
-            size_t offset = 0;
-            while (offset < incomingBytes) {
-                size_t amountConsumed = 0;
-                auto r = deserialize2<RequestWrapper<unsigned long long, data_t *>>(
-                        std::vector<char>(buf->get() + offset, buf->get() + incomingBytes), amountConsumed);
-                clientBatch.push_back(r);
-                offset += amountConsumed;
-            }
-        }
-
-        auto start = std::chrono::high_resolution_clock::now();
-        std::shared_ptr<Communication> comm = std::make_shared<RemoteCommunication>(clientConnection, buf);
-        DO_LOG(TRACE) << "Batching";
-        client->batch(clientBatch, comm, start);
-
-        std::cerr << "Ran batch\n";
-    }
+    t.join();
+    clientHandler.join();
 
     delete client;
-    delete buf;
     //delete server;
     return 0;
 }

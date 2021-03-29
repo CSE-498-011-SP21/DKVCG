@@ -49,6 +49,7 @@ target_link_libraries(dkvcg PUBLIC pthread)
 target_link_libraries(dkvcg PUBLIC kvstore)
 target_link_libraries(dkvcg PUBLIC tbbmalloc_proxy)
 target_link_libraries(dkvcg PUBLIC Boost::boost)
+target_link_libraries(dkvcg PUBLIC threadpool)
 
 add_executable(dkvcg_client service/client.cu)
 target_link_libraries(dkvcg_client PUBLIC lslab)
