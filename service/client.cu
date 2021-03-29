@@ -22,17 +22,41 @@ int main(int argc, char **argv) {
         clientBatch.push_back({(unsigned long long) (i + 1), new data_t(32), REQUEST_INSERT});
     }
 
+    std::vector<char> serializedData;
+    serializedData.reserve(4096);
+
     for (auto &r : clientBatch) {
         std::vector<char> v = serialize(r);
-        *(size_t *) buf = v.size();
-        client->send(buf, sizeof(size_t));
-        memcpy(buf, v.data(), v.size());
-        client->send(buf, v.size());
+
+        if (v.size() + sizeof(size_t) + serializedData.size() >= 4096) {
+            size_t size = serializedData.size();
+            memcpy(buf, &size, sizeof(size_t));
+            client->send(buf, sizeof(size_t));
+            memcpy(buf, serializedData.data(), serializedData.size());
+            client->send(buf, serializedData.size());
+            serializedData.clear();
+        }
+
+        serializedData.insert(serializedData.end(), v.begin(), v.end());
+
     }
 
+    if (!serializedData.empty()) {
+        size_t size = serializedData.size();
+        memcpy(buf, &size, sizeof(size_t));
+        client->send(buf, sizeof(size_t));
+        memcpy(buf, serializedData.data(), serializedData.size());
+        client->send(buf, serializedData.size());
+        serializedData.clear();
+    }
+
+    auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < 512; i++) {
         client->recv(buf, 4096);
     }
+    auto end = std::chrono::high_resolution_clock::now();
+
+    std::cout << 512 / std::chrono::duration<double>(end - start).count() << " Ops" << std::endl;
 
     // ack to end
     client->send(buf, 1);

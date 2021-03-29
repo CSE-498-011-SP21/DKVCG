@@ -127,7 +127,7 @@ int main(int argc, char **argv) {
 
     auto server = new cse498::ConnectionlessServer("127.0.0.1", 8080);
 
-    char* buf = new char[4096];
+    char *buf = new char[4096];
     //cse498::mr_t mr;
     loadBalanceSet = true;
 
@@ -136,13 +136,20 @@ int main(int argc, char **argv) {
     cse498::addr_t clientAddr = server->accept(buf, 4096);
 
     std::vector<RequestWrapper<unsigned long long int, data_t *>> clientBatch;
+    clientBatch.reserve(512);
 
-    for(size_t i = 0; i < 512; i++) {
+    while (clientBatch.size() != 512) {
         server->recv(clientAddr, buf, sizeof(size_t));
-        size_t size = *(size_t*)buf;
-        server->recv(clientAddr, buf, size);
-        auto r = deserialize<RequestWrapper<unsigned long long, data_t*>>(std::vector<char>(buf, buf + size));
-        clientBatch.push_back(r);
+        size_t incomingBytes = *(size_t *) buf;
+        server->recv(clientAddr, buf, incomingBytes);
+
+        size_t offset = 0;
+        while(offset < incomingBytes){
+            size_t amountConsumed = 0;
+            auto r = deserialize2<RequestWrapper<unsigned long long, data_t *>>(std::vector<char>(buf + offset, buf + incomingBytes), amountConsumed);
+            clientBatch.push_back(r);
+            offset += amountConsumed;
+        }
     }
 
     auto start = std::chrono::high_resolution_clock::now();
