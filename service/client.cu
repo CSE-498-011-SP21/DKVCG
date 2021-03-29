@@ -6,33 +6,25 @@
 
 int LOG_LEVEL = TRACE;
 
-int main(int argc, char **argv) {
-
-    auto client = new cse498::ConnectionlessClient("127.0.0.1", 8080);
-
-    char *buf = new char[4096];
-    cse498::mr_t mr;
-
-    client->registerMR(buf, 4096, mr);
-
-    client->connect(buf, 4096);
-
-    std::vector<RequestWrapper<unsigned long long, data_t *>> clientBatch;
-    for (int i = 0; i < 512; i++) {
-        clientBatch.push_back({(unsigned long long) (i + 1), new data_t(32), REQUEST_INSERT});
-    }
-
+void sendBatchAndRecvResponse(cse498::Connection *client,
+                              std::vector<RequestWrapper<unsigned long long, data_t *>> &clientBatch,
+                              cse498::unique_buf &buf) {
     std::vector<char> serializedData;
     serializedData.reserve(4096);
+
+    size_t batchsize = clientBatch.size();
+
+    buf.cpyTo((const char *) &batchsize, sizeof(size_t));
+    client->send(buf, sizeof(size_t));
 
     for (auto &r : clientBatch) {
         std::vector<char> v = serialize(r);
 
         if (v.size() + sizeof(size_t) + serializedData.size() >= 4096) {
             size_t size = serializedData.size();
-            memcpy(buf, &size, sizeof(size_t));
+            buf.cpyTo((char *) &size, sizeof(size_t));
             client->send(buf, sizeof(size_t));
-            memcpy(buf, serializedData.data(), serializedData.size());
+            buf.cpyTo(serializedData.data(), serializedData.size());
             client->send(buf, serializedData.size());
             serializedData.clear();
         }
@@ -43,9 +35,9 @@ int main(int argc, char **argv) {
 
     if (!serializedData.empty()) {
         size_t size = serializedData.size();
-        memcpy(buf, &size, sizeof(size_t));
+        buf.cpyTo((char *) &size, sizeof(size_t));
         client->send(buf, sizeof(size_t));
-        memcpy(buf, serializedData.data(), serializedData.size());
+        buf.cpyTo(serializedData.data(), serializedData.size());
         client->send(buf, serializedData.size());
         serializedData.clear();
     }
@@ -57,13 +49,32 @@ int main(int argc, char **argv) {
     auto end = std::chrono::high_resolution_clock::now();
 
     std::cout << 512 / std::chrono::duration<double>(end - start).count() << " Ops" << std::endl;
+}
 
-    // ack to end
-    client->send(buf, 1);
+void endConnection(cse498::Connection *client, cse498::unique_buf &buf) {
+    size_t batchsize = 0;
+    buf.cpyTo((const char *) &batchsize, sizeof(size_t));
+    client->send(buf, sizeof(size_t));
+}
 
-    cse498::free_mr(mr);
+int main(int argc, char **argv) {
+
+    auto client = new cse498::Connection("127.0.0.1", false, 8080);
+    client->connect();
+
+    cse498::unique_buf buf;
+    uint64_t key = 1;
+    client->register_mr(buf, FI_READ | FI_WRITE | FI_SEND | FI_RECV, key);
+
+    std::vector<RequestWrapper<unsigned long long, data_t *>> clientBatch;
+    for (int i = 0; i < 512; i++) {
+        clientBatch.push_back({(unsigned long long) (i + 1), new data_t(32), REQUEST_INSERT});
+    }
+
+    sendBatchAndRecvResponse(client, clientBatch, buf);
+    endConnection(client, buf);
+
     delete client;
-    delete[] buf;
     return 0;
 }
 

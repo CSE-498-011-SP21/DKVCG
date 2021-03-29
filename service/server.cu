@@ -125,42 +125,51 @@ int main(int argc, char **argv) {
         client = new NoCacheKVStoreClient<Model>(*ctx);
     }
 
-    auto server = new cse498::ConnectionlessServer("127.0.0.1", 8080);
-
-    char *buf = new char[4096];
-    //cse498::mr_t mr;
+    auto server = new cse498::Connection("127.0.0.1", true, 8080);
     loadBalanceSet = true;
+    server->connect();
 
-    //server->registerMR(buf, 4096, mr);
 
-    cse498::addr_t clientAddr = server->accept(buf, 4096);
+    uint64_t key = 1;
+    auto* buf = new cse498::unique_buf();
+    server->register_mr(*buf, FI_READ | FI_WRITE | FI_SEND | FI_RECV, key);
 
     std::vector<RequestWrapper<unsigned long long int, data_t *>> clientBatch;
-    clientBatch.reserve(512);
 
-    while (clientBatch.size() != 512) {
-        server->recv(clientAddr, buf, sizeof(size_t));
-        size_t incomingBytes = *(size_t *) buf;
-        server->recv(clientAddr, buf, incomingBytes);
+    while (true) {
 
-        size_t offset = 0;
-        while(offset < incomingBytes){
-            size_t amountConsumed = 0;
-            auto r = deserialize2<RequestWrapper<unsigned long long, data_t *>>(std::vector<char>(buf + offset, buf + incomingBytes), amountConsumed);
-            clientBatch.push_back(r);
-            offset += amountConsumed;
+        server->recv(*buf, sizeof(size_t));
+        size_t batchsize = *(size_t *) buf->get();
+        if (batchsize == 0) {
+            break;
         }
+
+        clientBatch.reserve(batchsize);
+
+        while (clientBatch.size() != batchsize) {
+            server->recv(*buf, sizeof(size_t));
+            size_t incomingBytes = *(size_t *) buf->get();
+            server->recv(*buf, incomingBytes);
+
+            size_t offset = 0;
+            while (offset < incomingBytes) {
+                size_t amountConsumed = 0;
+                auto r = deserialize2<RequestWrapper<unsigned long long, data_t *>>(
+                        std::vector<char>(buf->get() + offset, buf->get() + incomingBytes), amountConsumed);
+                clientBatch.push_back(r);
+                offset += amountConsumed;
+            }
+        }
+
+        auto start = std::chrono::high_resolution_clock::now();
+        std::shared_ptr<Communication> comm = std::make_shared<RemoteCommunication>(server, buf);
+        client->batch(clientBatch, comm, start);
+
+        std::cerr << "Ran batch\n";
     }
 
-    auto start = std::chrono::high_resolution_clock::now();
-    std::shared_ptr<Communication> comm = std::make_shared<RemoteCommunication>(server, clientAddr);
-    client->batch(clientBatch, comm, start);
-
-    std::cerr << "Ran batch\n";
-
-    server->recv(clientAddr, buf, 1);
-
     delete client;
+    delete buf;
     //delete server;
     return 0;
 }
