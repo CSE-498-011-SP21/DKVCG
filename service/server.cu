@@ -39,7 +39,7 @@ struct ServerConf {
         batchSize = BATCHSIZE;
         modelFile = "";
         cpu_threads = NUM_THREADS;
-        threads = 2;//1;//4;
+        threads = 4;//1;//4;
         gpus = 1;
         streams = 10;//10;
         size = 1000000;
@@ -129,7 +129,7 @@ int main(int argc, char **argv) {
     auto server = new cse498::Connection("127.0.0.1", true, 8080);
     bool rerun = false;
 
-    cse498::threadpool clientHandler(4);
+    cse498::threadpool clientHandler(sconf.threads);
 
     std::atomic_bool done = false;
 

@@ -29,15 +29,43 @@ You can also build with the dockerfile.
 
 ## Docker
 
-Create a rsa public key and private key named docker_rsa and docker_rsa.pub in this directory and
-register it with Github.
+Create a rsa public key and private key named docker_rsa and docker_rsa.pub in this directory and register it with
+Github.
 
 Run buildDocker.sh to build the docker image.
 
-Run runDocker.sh to run the docker image. Note that it maps the host directory into the container,
-so modifications will persist after exiting the container.
+Run runDocker.sh to run the docker image. Note that it maps the host directory into the container, so modifications will
+persist after exiting the container.
 
 Go to /dkvcg once in the container and run build.sh to build the project.
+
+## Configuration File
+
+Example configuration:
+
+```json
+{
+  "threads": 4,
+  "cpu_threads": 12,
+  "gpus": 1,
+  "streams": 10,
+  "modelFile": "",
+  "train": false,
+  "size": 1000000,
+  "batchSize": 512,
+  "cache": true
+}
+```
+
+- threads corresponds to number of threads to handle client requests
+- cpu threads corresponds to number of threads in the pool running the hot cache
+- gpus corresponds to the number of gpus
+- streams corresponds to the number of streams to handle GPU requests
+- modelFile corresponds to the model file
+- train corresponds to whether training should occur for requests
+- size corresponds to the index size
+- batch size corresponds to the expected batch size
+- cache corresponds to whether the hot cache should be used
 
 ## Running without a GPU
 
