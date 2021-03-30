@@ -38,3 +38,7 @@ Run runDocker.sh to run the docker image. Note that it maps the host directory i
 so modifications will persist after exiting the container.
 
 Go to /dkvcg once in the container and run build.sh to build the project.
+
+## Running without a GPU
+
+Set gpus in the configuration file to 0.
