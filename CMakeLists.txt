@@ -19,7 +19,7 @@ include(FetchContent)
 
 FetchContent_Declare(
         NetworkLayer
-        GIT_REPOSITORY http://git@github.com/CSE-498-011-SP21/network-layer.git
+        GIT_REPOSITORY git@github.com:CSE-498-011-SP21/network-layer.git
         GIT_TAG main
 )
 
