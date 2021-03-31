@@ -5,6 +5,7 @@
 #include <boost/property_tree/json_parser.hpp>
 #include <RemoteCommunication.hh>
 #include <threadpool.hh>
+#include <csignal>
 
 // CJD218: Unused currently
 #include <faulttolerance/fault_tolerance.h>
@@ -21,8 +22,12 @@ using RB = std::shared_ptr<Communication>;
 int totalBatches = 10000;
 int BATCHSIZE = 512;
 int NUM_THREADS = 12;//std::thread::hardware_concurrency() - 10;
-
+std::atomic_bool done(false);
 int LOG_LEVEL = WARNING;
+
+void signal_handler(int signo) {
+    done = true;
+}
 
 void usage(char *command);
 
@@ -142,7 +147,10 @@ int main(int argc, char **argv) {
 
     cse498::threadpool clientHandler(sconf.threads);
 
-    std::atomic_bool done = false;
+    if (signal(SIGINT, signal_handler) == SIG_ERR) {
+        DO_LOG(ERROR) << "Unable to set signal handler";
+        return 1;
+    }
 
     std::thread t = std::thread([&]() {
         while (!done) {
@@ -189,7 +197,9 @@ int main(int argc, char **argv) {
                         size_t offset = 0;
                         while (offset < incomingBytes) {
                             size_t amountConsumed = 0;
-                            auto r = deserialize2<RequestWrapper<unsigned long long, data_t *>>(buf->get() + offset, incomingBytes, amountConsumed);
+                            auto r = deserialize2<RequestWrapper<unsigned long long, data_t *>>(buf->get() + offset,
+                                                                                                incomingBytes,
+                                                                                                amountConsumed);
                             clientBatch.push_back(r);
                             offset += amountConsumed;
                         }
@@ -207,9 +217,9 @@ int main(int argc, char **argv) {
     });
 
     // wait on input to end
-    std::string ret;
-    std::cin >> ret;
-    done = true;
+    while (!done) {
+        std::this_thread::yield();
+    }
 
     t.join();
     clientHandler.join();
