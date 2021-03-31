@@ -34,6 +34,8 @@ struct ServerConf {
     int size;
     int batchSize;
     bool cache;
+    std::string address;
+    int port;
 
     ServerConf() {
         batchSize = BATCHSIZE;
@@ -45,6 +47,8 @@ struct ServerConf {
         size = 1000000;
         train = false;
         cache = true;
+        address = "127.0.0.1";
+        port = 8080;
     }
 
     explicit ServerConf(const std::string &filename) {
@@ -59,6 +63,8 @@ struct ServerConf {
         size = root.get<int>("size", 1000000);
         batchSize = root.get<int>("batchSize", BATCHSIZE);
         cache = root.get<bool>("cache", true);
+        address = root.get<std::string>("address", "127.0.0.1");
+        port = root.get<int>("port", 8080);
     }
 
     void persist(const std::string &filename) const {
@@ -71,6 +77,8 @@ struct ServerConf {
         root.put("size", size);
         root.put("batchSize", batchSize);
         root.put("cache", cache);
+        root.put("address", address);
+        root.put("port", port);
         pt::write_json(filename, root);
     }
 
@@ -126,7 +134,7 @@ int main(int argc, char **argv) {
         client = new NoCacheKVStoreClient<Model>(*ctx);
     }
 
-    auto server = new cse498::Connection("127.0.0.1", true, 8080);
+    auto server = new cse498::Connection(sconf.address.c_str(), true, sconf.port);
     bool rerun = false;
 
     cse498::threadpool clientHandler(sconf.threads);
@@ -178,8 +186,7 @@ int main(int argc, char **argv) {
                         size_t offset = 0;
                         while (offset < incomingBytes) {
                             size_t amountConsumed = 0;
-                            auto r = deserialize2<RequestWrapper<unsigned long long, data_t *>>(
-                                    std::vector<char>(buf->get() + offset, buf->get() + incomingBytes), amountConsumed);
+                            auto r = deserialize2<RequestWrapper<unsigned long long, data_t *>>(buf->get() + offset, incomingBytes, amountConsumed);
                             clientBatch.push_back(r);
                             offset += amountConsumed;
                         }

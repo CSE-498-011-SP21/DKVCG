@@ -53,7 +53,9 @@ Example configuration:
   "train": false,
   "size": 1000000,
   "batchSize": 512,
-  "cache": true
+  "cache": true,
+  "address" : "127.0.0.1",
+  "port" : 8080
 }
 ```
 

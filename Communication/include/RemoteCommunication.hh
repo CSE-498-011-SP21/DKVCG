@@ -18,9 +18,8 @@ struct RemoteCommunication final : public Communication {
     virtual ~RemoteCommunication() {}
 
     virtual inline void send(Response &&r) {
-        auto v = serialize(r);
-        buf->cpyTo(v.data(), v.size());
-        conn->send(*buf, v.size());
+        size_t s = serialize2(buf->get(), 4096, r);
+        conn->send(*buf, s);
     }
 
     virtual inline bool try_recv(Response &r) {
