@@ -6,6 +6,9 @@
 #include <RemoteCommunication.hh>
 #include <threadpool.hh>
 
+// CJD218: Unused currently
+#include <faulttolerance/fault_tolerance.h>
+
 namespace pt = boost::property_tree;
 using BatchWrapper = std::vector<RequestWrapper<unsigned long long, data_t *>>;
 //#ifdef MODEL_CHANGE

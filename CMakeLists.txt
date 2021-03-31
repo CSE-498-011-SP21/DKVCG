@@ -25,6 +25,14 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(NetworkLayer)
 
+FetchContent_Declare(
+        FaultTolerance
+        GIT_REPOSITORY git@github.com:CSE-498-011-SP21/fault-tolerance.git
+        GIT_TAG main
+)
+
+FetchContent_MakeAvailable(FaultTolerance)
+
 enable_testing()
 
 add_subdirectory(commonInterfaces)
@@ -50,6 +58,7 @@ target_link_libraries(dkvcg PUBLIC kvstore)
 target_link_libraries(dkvcg PUBLIC tbbmalloc_proxy)
 target_link_libraries(dkvcg PUBLIC Boost::boost)
 target_link_libraries(dkvcg PUBLIC threadpool)
+target_link_libraries(dkvcg PUBLIC faulttolerance)
 
 add_executable(dkvcg_client service/client.cu)
 target_link_libraries(dkvcg_client PUBLIC lslab)
@@ -57,6 +66,7 @@ target_link_libraries(dkvcg_client PUBLIC pthread)
 target_link_libraries(dkvcg_client PUBLIC kvstore)
 target_link_libraries(dkvcg_client PUBLIC tbbmalloc_proxy)
 target_link_libraries(dkvcg_client PUBLIC Boost::boost)
+target_link_libraries(dkvcg_client PUBLIC faulttolerance)
 
 
 set(KVGPU_TARGETLIST ${KVGPU_TARGETLIST} kvstore rand)
