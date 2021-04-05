@@ -31,11 +31,16 @@ struct LocalCommunication final : public Communication {
     virtual inline ~LocalCommunication() {}
 
     virtual inline void send(Response &&r) {
+        r.shouldFree_ = false;
         response.push(r);
     }
 
     virtual inline bool try_recv(Response &r) {
-        return response.try_pop(r);
+        bool b = response.try_pop(r);
+        if(b){
+            r.shouldFree_ = true;
+        }
+        return b;
     }
 
     int size;

@@ -5,6 +5,16 @@ target_link_libraries(kvcg PUBLIC kvstore)
 target_link_libraries(kvcg PUBLIC tbbmalloc_proxy)
 target_link_libraries(kvcg PUBLIC Boost::boost)
 
+#run with ASAN_OPTIONS=protect_shadow_gap=0
+add_executable(kvcg_asan server.cu)
+target_link_libraries(kvcg_asan PUBLIC asan)
+target_compile_options(kvcg_asan PRIVATE -Xcompiler '-fsanitize=address')
+target_link_libraries(kvcg_asan PUBLIC lslab)
+target_link_libraries(kvcg_asan PUBLIC pthread)
+target_link_libraries(kvcg_asan PUBLIC kvstore)
+#target_link_libraries(kvcg PUBLIC tbbmalloc_proxy)
+target_link_libraries(kvcg_asan PUBLIC Boost::boost)
+
 add_library(zipfianWorkload SHARED zipfianWorkload.cu)
 target_link_libraries(zipfianWorkload PRIVATE kvstore)
 target_link_libraries(zipfianWorkload PRIVATE tbbmalloc_proxy)

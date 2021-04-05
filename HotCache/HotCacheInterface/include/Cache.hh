@@ -17,7 +17,7 @@
  * @tparam SETS
  * @tparam N
  */
-template<unsigned SETS = 524288 / sizeof(kvgpu::LockingPair < unsigned long long, data_t * >) / 8, unsigned N = 8>
+template<unsigned SETS = 524288 / sizeof(kvgpu::LockingPair<unsigned long long, data_t *>) / 8, unsigned N = 8>
 class KVCacheWrapper {
 private:
     using K = unsigned long long;
@@ -35,7 +35,7 @@ public:
      */
     ~KVCacheWrapper() {}
 
-    std::pair<bool, data_t *> get(K key, unsigned hash, const kvgpu::Model <K> &mfn) {
+    std::pair<bool, data_t *> get(K key, unsigned hash, const kvgpu::Model<K> &mfn) {
         auto pair = cache.fast_get(key, hash, mfn);
 
         if (pair.first == nullptr || pair.first->valid != 1) {
@@ -58,7 +58,7 @@ public:
      * @param mfn
      * @return
      */
-    inline data_t *put(K key, data_t *value, unsigned hash, const kvgpu::Model <K> &mfn) {
+    inline data_t *put(K key, data_t *value, unsigned hash, const kvgpu::Model<K> &mfn) {
         auto pair = cache.get_with_log(key, hash, mfn);
         assert(std::get<0>(pair));
         data_t *old_value = std::get<0>(pair)->value;
@@ -82,7 +82,7 @@ public:
      * @param mfn
      * @return
      */
-    inline data_t *remove(K key, data_t *value, unsigned hash, const kvgpu::Model <K> &mfn) {
+    inline data_t *remove(K key, data_t *value, unsigned hash, const kvgpu::Model<K> &mfn) {
         auto pair = cache.get_with_log(key, hash, mfn);
         assert(std::get<0>(pair));
 
@@ -108,13 +108,13 @@ public:
      * @param mfn
      * @return
      */
-    inline data_t *missCallback(K key, data_t *value, unsigned hash, const kvgpu::Model <K> &mfn) {
+    inline data_t *missCallback(K key, data_t *value, unsigned hash, const kvgpu::Model<K> &mfn) {
         auto cacheRes = cache.internal_get(key, hash, mfn);
 
         data_t *cpy = nullptr;
 
         if (cacheRes.first->valid == 1) {
-            if (cacheRes.first->deleted == 0) {
+            if (cacheRes.first->deleted == 0 && cacheRes.first->value) {
                 cpy = new data_t(cacheRes.first->value->size);
                 memcpy(cpy->data, cacheRes.first->value->data, cpy->size);
             }
@@ -122,7 +122,7 @@ public:
             cacheRes.first->valid = 1;
             cacheRes.first->value = value;
             cacheRes.first->deleted = (value == nullptr);
-            if (cacheRes.first->deleted == 0) {
+            if (cacheRes.first->deleted == 0 && cacheRes.first->value) {
                 cpy = new data_t(cacheRes.first->value->size);
                 memcpy(cpy->data, cacheRes.first->value->data, cpy->size);
             }
@@ -132,7 +132,7 @@ public:
     }
 
     template<typename H>
-    void scan_and_evict(const kvgpu::Model <K> &mfn, const H &hfn, std::unique_lock<std::mutex> modelLock) {
+    void scan_and_evict(const kvgpu::Model<K> &mfn, const H &hfn, std::unique_lock<std::mutex> modelLock) {
         cache.scan_and_evict(mfn, hfn, std::move(modelLock));
     }
 

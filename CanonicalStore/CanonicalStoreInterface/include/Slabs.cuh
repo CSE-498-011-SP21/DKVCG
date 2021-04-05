@@ -6,6 +6,7 @@
 #include <BatchData.cuh>
 #include "StatData.cuh"
 #include <Cache.hh>
+#include <unordered_map>
 
 #ifndef KVCG_SLABS_HH
 #define KVCG_SLABS_HH
@@ -24,16 +25,23 @@ struct Slabs {
 
     Slabs(const std::vector<PartitionedSlabUnifiedConfig> &config,
           std::shared_ptr<typename Cache::type> cache, std::shared_ptr<M> m) : done(false),
-                                                                                  mops(new tbb::concurrent_vector<StatData>[config.size()]),
-                                                                                  _cache(cache), ops(0),
-                                                                                  load(0), model(m) {
+                                                                               mops(new tbb::concurrent_vector<StatData>[config.size()]),
+                                                                               _cache(cache), ops(0),
+                                                                               load(0), model(m) {
         std::unordered_map<int, std::shared_ptr<SlabUnified<unsigned long long, V>>> gpusToSlab;
         for (int i = 0; i < config.size(); i++) {
             if (gpusToSlab.find(config[i].gpu) == gpusToSlab.end())
-                gpusToSlab[config[i].gpu] = std::make_shared<SlabUnified<unsigned long long, V >>(config[i].size, config[i].gpu);
+                gpusToSlab[config[i].gpu] = std::make_shared<SlabUnified<unsigned long long, V >>(config[i].size,
+                                                                                                  config[i].gpu);
         }
         gpu_qs = new q_t[gpusToSlab.size()];
         numslabs = gpusToSlab.size();
+
+        numThreads = config.size();
+        epoch = new std::atomic_uint32_t[numThreads];
+        for (int i = 0; i < config.size(); i++) {
+            epoch[i] = 0;
+        }
 
         for (int i = 0; i < config.size(); i++) {
             //config[i].stream;
@@ -55,7 +63,26 @@ struct Slabs {
                                     std::chrono::high_resolution_clock::time_point sampleTime;
                                     bool sampleTimeSet = false;
                                     int index = THREADS_PER_BLOCK * BLOCKS;
+
+                                    uint32_t currentEpoch = epoch[tid];
+                                    std::unordered_map<uint32_t, std::vector<data_t *>> freeList;
+
                                     while (!done.load()) {
+
+                                        uint32_t newMin = UINT32_MAX;
+                                        for (size_t i = 0; i < numThreads; i++) {
+                                            if (epoch[i] < newMin) {
+                                                newMin = epoch[i];
+                                            }
+                                        }
+                                        auto iter = freeList.find(newMin - 2);
+                                        if (iter != freeList.end())
+                                            for (data_t *elm : iter->second) {
+                                                delete[] elm->data;
+                                                delete elm;
+                                            }
+                                        freeList.erase(newMin - 2);
+
                                         writeBack.clear();
                                         for (int i = 0; i < index; i++) {
                                             requests[i] = REQUEST_EMPTY;
@@ -141,34 +168,33 @@ struct Slabs {
                                             gpuErrchk(cudaEventDestroy(start));
                                             gpuErrchk(cudaEventDestroy(stop));
                                             int timesGoingToCache = 0;
+                                            freeList[currentEpoch] = std::vector<data_t *>();
                                             for (auto &wb : writeBack) {
 
                                                 for (int i = 0; i < wb.second->idx; ++i) {
 
                                                     if (wb.second->handleInCache[i]) {
                                                         timesGoingToCache++;
+                                                        // dont need to free this, just move it
 
                                                         auto value = _cache->missCallback(
                                                                 wb.second->keys[i], values[wb.first + i], wb.second->hashes[i],
                                                                 *(this->model));
-                                                        wb.second->resBuf->send(Response(wb.second->requestID[i], value, false));
-
+                                                        wb.second->resBuf->send(
+                                                                Response(wb.second->requestID[i], value, false, false));
                                                     } else {
-                                                        data_t* value;
-                                                        if (requests[wb.first + i] == REQUEST_REMOVE) {
-                                                            value = values[wb.first + i];
-
-                                                        } else if (requests[wb.first + i] == REQUEST_GET) {
-                                                            V cpy = nullptr;
-                                                            if (values[wb.first + i]) {
-                                                                cpy = new data_t(values[wb.first + i]->size);
-                                                                memcpy(cpy->data, values[wb.first + i]->data, cpy->size);
-                                                            }
+                                                        // make a copy and return that
+                                                        data_t *value = nullptr;
+                                                        if (values[wb.first + i]) {
+                                                            auto *cpy = new data_t(values[wb.first + i]->size);
+                                                            memcpy(cpy->data, values[wb.first + i]->data, cpy->size);
                                                             value = cpy;
-                                                        } else {
-                                                            value = nullptr;
                                                         }
-                                                        wb.second->resBuf->send(Response(wb.second->requestID[i], value, false));
+                                                        wb.second->resBuf->send(
+                                                                Response(wb.second->requestID[i], value, false, true));
+                                                        if (wb.second->requestID[i] == REQUEST_INSERT ||
+                                                            wb.second->requestID[i] == REQUEST_REMOVE)
+                                                            freeList[currentEpoch].push_back(values[wb.first + i]);
                                                     }
                                                 }
                                                 delete wb.second;
@@ -188,6 +214,8 @@ struct Slabs {
                                             //std::cerr << "Batched " << tid << "\n";
 
                                         }
+                                        epoch[tid].fetch_add(1);
+                                        currentEpoch++;
                                     }
                                     if (stream != cudaStreamDefault) gpuErrchk(cudaStreamDestroy(stream));
                                 }, i, config[i].gpu,
@@ -205,6 +233,7 @@ struct Slabs {
         }
         delete[] gpu_qs;
         delete[] mops;
+        delete[] epoch;
     }
 
     inline void clearMops() {
@@ -243,6 +272,8 @@ private:
     q_t *gpu_qs;
     int numslabs;
     std::vector<std::thread> threads;
+    std::atomic_uint32_t *epoch;
+    size_t numThreads;
     std::atomic_bool done;
     tbb::concurrent_vector<StatData> *mops;
     std::shared_ptr<typename Cache::type> _cache;
