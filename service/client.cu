@@ -68,7 +68,7 @@ int main(int argc, char **argv) {
 
     std::vector<RequestWrapper<unsigned long long, data_t *>> clientBatch;
     for (int i = 0; i < 512; i++) {
-        clientBatch.push_back({(unsigned long long) (i + 1), new data_t(32), REQUEST_INSERT});
+        clientBatch.push_back({(unsigned long long) (i + 1), 0, new data_t(32), REQUEST_INSERT});
     }
 
     sendBatchAndRecvResponse(client, clientBatch, buf);
