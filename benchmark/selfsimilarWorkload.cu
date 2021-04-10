@@ -79,14 +79,14 @@ generateWorkloadLargeKey(size_t keySize, int size, int range, unsigned *seed,
 
     for (int i = 0; i < size; i++) {
         if (rand_r(seed) % 100 < ratioOfReads) {
-            vec.push_back({selfsimilar(range, h, seed), nullptr, REQUEST_GET});
+            vec.push_back({selfsimilar(range, h, seed), 0, nullptr, REQUEST_GET});
         } else {
             if (rand_r(seed) % 100 < 50) {
-                vec.push_back({selfsimilar(range, h, seed), new data_t(keySize),
+                vec.push_back({selfsimilar(range, h, seed), 0, new data_t(keySize),
                                REQUEST_INSERT});
             } else {
                 vec.push_back(
-                        {selfsimilar(range, h, seed), nullptr, REQUEST_REMOVE});
+                        {selfsimilar(range, h, seed), 0, nullptr, REQUEST_REMOVE});
             }
         }
 
@@ -118,7 +118,7 @@ extern "C" std::vector<BatchWrapper> getPopulationBatches(unsigned int *seed, un
     while (iter != keys.end()) {
         std::vector<RequestWrapper<unsigned long long, data_t *>> vec;
         for (int i = 0; i < batchsize && iter != keys.end(); i++) {
-            vec.push_back({*iter, new data_t(workloadConfig.keysize), REQUEST_INSERT});
+            vec.push_back({*iter, 0, new data_t(workloadConfig.keysize), REQUEST_INSERT});
             ++iter;
         }
         batches.push_back(vec);
