@@ -7,8 +7,8 @@
 #include <threadpool.hh>
 #include <csignal>
 
-// CJD218: Unused currently
 #include <faulttolerance/fault_tolerance.h>
+namespace ft = cse498::faulttolerance;
 
 namespace pt = boost::property_tree;
 using BatchWrapper = std::vector<RequestWrapper<unsigned long long, data_t *>>;
@@ -97,12 +97,18 @@ struct ServerConf {
 int main(int argc, char **argv) {
 
     ServerConf sconf;
+    std::string cfgFile;
+    ft::Server* ftServer = new ft::Server();
+    bool ftEnabled = true;
 
     char c;
-    while ((c = getopt(argc, argv, "f:")) != -1) {
+    while ((c = getopt(argc, argv, "vf:")) != -1) {
         switch (c) {
+            case 'v':
+                LOG_LEVEL++;
+                break;
             case 'f':
-                sconf = ServerConf(std::string(optarg));
+                cfgFile = optarg;
                 // optarg is the file
                 break;
             default:
@@ -110,6 +116,18 @@ int main(int argc, char **argv) {
                 usage(argv[0]);
                 return 1;
         }
+    }
+
+    sconf = ServerConf(cfgFile);
+    int ftstatus = ftServer->initialize(cfgFile);
+    if (ftstatus) {
+      if (ftstatus == KVCG_EBADCONFIG) {
+          LOG(WARNING) << "Fault-Tolerance disabled";
+          ftEnabled = false;
+      } else {
+          // fatal
+          return 1;
+      }
     }
 
     std::vector<PartitionedSlabUnifiedConfig> conf;
@@ -168,7 +186,7 @@ int main(int argc, char **argv) {
             } while (rerun);
             DO_LOG(TRACE) << "Connection made";
 
-            clientHandler.submit([clientConnection, client]() {
+            clientHandler.submit([clientConnection, client, ftEnabled, ftServer]() {
                 loadBalanceSet = true;
 
                 uint64_t key = 1;
@@ -208,6 +226,12 @@ int main(int argc, char **argv) {
                     auto start = std::chrono::high_resolution_clock::now();
                     std::shared_ptr<Communication> comm = std::make_shared<RemoteCommunication>(clientConnection, buf);
                     DO_LOG(TRACE) << "Batching";
+                    if (ftEnabled) {
+                        if(ftServer->log_put(clientBatch)) {
+                            // TBD: best way to handle. For now, do NOT run the batch locally
+                            continue;
+                        }
+                    }
                     client->batch(clientBatch, comm, start);
 
                     std::cerr << "Ran batch\n";
@@ -221,6 +245,10 @@ int main(int argc, char **argv) {
         std::this_thread::yield();
     }
 
+    if (ftEnabled) {
+        ftServer->shutdownServer();
+    }
+
     t.join();
     clientHandler.join();
 
@@ -231,5 +259,5 @@ int main(int argc, char **argv) {
 
 void usage(char *command) {
     using namespace std;
-    cout << command << " [-f <config file>]" << std::endl;
+    cout << command << " [-f <config file>] [-v]" << std::endl;
 }
