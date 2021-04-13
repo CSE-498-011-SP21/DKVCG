@@ -1,10 +1,14 @@
 #include <unistd.h>
+#include <map>
 #include "helper.cuh"
 #include <networklayer/connectionless.hh>
 #include <RemoteCommunication.hh>
 #include <cmath>
+#include <string>
 
-int LOG_LEVEL = TRACE;
+#include <faulttolerance/fault_tolerance.h>
+namespace ft = cse498::faulttolerance;
+int LOG_LEVEL = WARNING;
 
 void sendBatchAndRecvResponse(cse498::Connection *client,
                               std::vector<RequestWrapper<unsigned long long, data_t *>> &clientBatch,
@@ -43,7 +47,7 @@ void sendBatchAndRecvResponse(cse498::Connection *client,
     }
 
     auto start = std::chrono::high_resolution_clock::now();
-    for (int i = 0; i < 512; i++) {
+    for (int i = 0; i < batchsize; i++) {
         client->recv(buf, 4096);
     }
     auto end = std::chrono::high_resolution_clock::now();
@@ -58,23 +62,76 @@ void endConnection(cse498::Connection *client, cse498::unique_buf &buf) {
 }
 
 int main(int argc, char **argv) {
+    std::string cfgFile;
+    bool ftEnabled = true;
+    ft::Client* ftClient = new ft::Client();
 
-    auto client = new cse498::Connection("127.0.0.1", false, 8080);
-    client->connect();
-
-    cse498::unique_buf buf;
-    uint64_t key = 1;
-    client->register_mr(buf, FI_READ | FI_WRITE | FI_SEND | FI_RECV, key);
-
-    std::vector<RequestWrapper<unsigned long long, data_t *>> clientBatch;
-    for (int i = 0; i < 512; i++) {
-        clientBatch.push_back({(unsigned long long) (i + 1), 0, new data_t(32), REQUEST_INSERT});
+    char c;
+    while ((c = getopt(argc, argv, "vf:")) != -1) {
+        switch (c) {
+            case 'v':
+                LOG_LEVEL++;
+                break;
+            case 'f':
+                cfgFile = optarg;
+                // optarg is the file
+                break;
+        }
     }
 
-    sendBatchAndRecvResponse(client, clientBatch, buf);
-    endConnection(client, buf);
+    int ftstatus = ftClient->initialize(cfgFile);
+    if (ftstatus) {
+      if (ftstatus == KVCG_EBADCONFIG) {
+          LOG(WARNING) << "Fault-Tolerance disabled";
+          ftEnabled = false;
+      } else {
+          // fatal
+          return 1;
+      }
+    }
 
-    delete client;
+    if (ftEnabled) {
+        std::map<ft::Shard*, std::vector<RequestWrapper<unsigned long long, data_t *>>*> batches;
+        for (int i = 0; i < 512; i++) {
+            ft::Shard* shard = ftClient->getShard((unsigned long long) (i + 1));
+
+            if (batches.find(shard) == batches.end()) {
+                batches.insert({shard, new std::vector<RequestWrapper<unsigned long long, data_t *>>});
+            }
+            batches.find(shard)->second->push_back({(unsigned long long) (i + 1), 0, new data_t(32), REQUEST_INSERT});
+        }
+
+        for (auto it = batches.begin(); it != batches.end(); ++it) {
+            auto client = it->first->getPrimary()->primary_conn;
+            client->connect();
+
+            cse498::unique_buf* buf = new cse498::unique_buf();
+            uint64_t key = 1;
+            client->register_mr(*buf, FI_READ | FI_WRITE | FI_SEND | FI_RECV, key);
+
+            sendBatchAndRecvResponse(client, *it->second, *buf);
+            endConnection(client, *buf);
+        }
+    }
+    else {
+        auto client = new cse498::Connection("127.0.0.1", false, 8081);
+        client->connect();
+
+        cse498::unique_buf buf;
+        uint64_t key = 1;
+        client->register_mr(buf, FI_READ | FI_WRITE | FI_SEND | FI_RECV, key);
+
+        std::vector<RequestWrapper<unsigned long long, data_t *>> clientBatch;
+        for (int i = 0; i < 512; i++) {
+            clientBatch.push_back({(unsigned long long) (i + 1), 0, new data_t(32), REQUEST_INSERT});
+        }
+
+        sendBatchAndRecvResponse(client, clientBatch, buf);
+        endConnection(client, buf);
+
+        delete client;
+    }
+
     return 0;
 }
 
