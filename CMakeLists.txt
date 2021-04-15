@@ -59,6 +59,8 @@ target_link_libraries(dkvcg PUBLIC tbbmalloc_proxy)
 target_link_libraries(dkvcg PUBLIC Boost::boost)
 target_link_libraries(dkvcg PUBLIC threadpool)
 target_link_libraries(dkvcg PUBLIC faulttolerance)
+# Enable loopback support for testing
+target_compile_definitions(faulttolerance PUBLIC LOOPBACK)
 
 add_executable(dkvcg_client service/client.cu)
 target_link_libraries(dkvcg_client PUBLIC lslab)
