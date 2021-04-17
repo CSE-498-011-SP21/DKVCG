@@ -234,7 +234,7 @@ int main(int argc, char **argv) {
                     std::shared_ptr<Communication> comm = std::make_shared<RemoteCommunication>(clientConnection, buf);
                     DO_LOG(TRACE) << "Batching";
                     if (ftEnabled) {
-                        if(ftServer->log_put(clientBatch)) {
+                        if(ftServer->logRequest(clientBatch)) {
                             // TBD: best way to handle. For now, do NOT run the batch locally
                             continue;
                         }
