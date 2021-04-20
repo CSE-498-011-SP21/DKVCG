@@ -6,6 +6,10 @@
 #include <cmath>
 #include <string>
 
+#include <data_t.hh>
+#include <RequestTypes.hh>
+#include <RequestWrapper.hh>
+
 #include <faulttolerance/fault_tolerance.h>
 namespace ft = cse498::faulttolerance;
 int LOG_LEVEL = WARNING;
@@ -71,17 +75,33 @@ void endConnection(cse498::Connection *client, cse498::unique_buf &buf) {
 
 std::map<ft::Shard*, std::vector<RequestWrapper<unsigned long long, data_t *>>*> openTestFile(std::string file, ft::Client* ftClient) {
     std::map<ft::Shard*, std::vector<RequestWrapper<unsigned long long, data_t *>>*> batches;
-    fstream fin;
+    std::fstream fin;
     // TODO: deal w failure if unable to open
     fin.open(file, ios::in);
 
     int reqInt;
+    std::string reqType;
     unsigned long long key;
     data_t value;
     
     while(getline(file, key, ',')) {
-        getline(file, value, ',');
-        getline(file, reqInt);
+        getline(file, reqType, ',');
+        getline(file, value);
+
+        switch (reqType) {
+            case "put":
+                reqInt = REQUEST_INSERT;
+                break;
+            case "get":
+                reqInt = REQUEST_GET;
+                break;
+            case "delete":
+                reqInt = REQUEST_REMOVE;
+            default:
+                // error
+                break;
+        }
+            
         
         ft::Shard* shard = ftClient->getShard((unsigned long long) key);
 
