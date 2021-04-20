@@ -121,7 +121,7 @@ int main(int argc, char **argv) {
     ft::Client* ftClient = new ft::Client();
 
     char c;
-    while ((c = getopt(argc, argv, "vft:")) != -1) {
+    while ((c = getopt(argc, argv, "vf:t:")) != -1) {
         switch (c) {
             case 'v':
                 LOG_LEVEL++;
@@ -204,5 +204,5 @@ int main(int argc, char **argv) {
 
 void usage(char *command) {
     using namespace std;
-    cout << command << " [-f <config file>]" << std::endl;
+    cout << command << " [-f <config file>] [-t <test csv file>]" << std::endl;
 }
