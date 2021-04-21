@@ -111,6 +111,8 @@ std::map<ft::Shard*, std::vector<RequestWrapper<unsigned long long, data_t *>>*>
         batches.find(shard)->second->push_back({key, 0, value, reqInt});
     }
 
+    fin.close();
+
     return batches;
 }
 
@@ -131,8 +133,8 @@ int main(int argc, char **argv) {
                 // optarg is the file
                 break;
             case 't':
-                testFile = testData;
-                // testData is csv file containing test data
+                testFile = optarg;
+                // optarg is csv file containing test data
                 break;
         }
     }
