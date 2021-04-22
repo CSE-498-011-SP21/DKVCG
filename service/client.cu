@@ -93,6 +93,7 @@ std::map<ft::Shard*, std::vector<RequestWrapper<unsigned long long, data_t *>>*>
     int reqInt;
     std::string key_str;
     unsigned long long key;
+    unsigned long long endRange;
     std::string reqType;
     std::string value;
 
@@ -113,6 +114,13 @@ std::map<ft::Shard*, std::vector<RequestWrapper<unsigned long long, data_t *>>*>
         
         LOG(DEBUG4) << "Key: " << key_str;
 
+        getline(s, key_str, ',');
+    
+        if (key_str.empty()) break;
+        endRange = std::stoull(key_str, nullptr, 10);
+        
+        LOG(DEBUG4) << "endRange: " << key_str;
+
         getline(s, reqType, ',');;
         
         LOG(DEBUG4) << "ReqType: " << reqType;
@@ -125,6 +133,9 @@ std::map<ft::Shard*, std::vector<RequestWrapper<unsigned long long, data_t *>>*>
         }
         else if (reqType.compare("delete") == 0) {
             reqInt = REQUEST_REMOVE;
+        }
+        else if (reqType.compare("range") == 0) {
+            reqInt = REQUEST_RQ;
         }
         
         getline(s, value);
@@ -139,7 +150,7 @@ std::map<ft::Shard*, std::vector<RequestWrapper<unsigned long long, data_t *>>*>
             batches.insert({shard, new std::vector<RequestWrapper<unsigned long long, data_t *>>});
         }
 
-        batches.find(shard)->second->push_back({key, 0, value_data, reqInt});
+        batches.find(shard)->second->push_back({key, endRange, value_data, reqInt});
     }
 
     fin.close();
