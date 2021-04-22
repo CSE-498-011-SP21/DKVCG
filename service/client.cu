@@ -102,7 +102,20 @@ int main(int argc, char **argv) {
         }
 
         for (auto it = batches.begin(); it != batches.end(); ++it) {
-            auto client = it->first->getPrimary()->primary_conn;
+            auto primary = it->first->getPrimary();
+
+            if (primary == nullptr) {
+                it->first->discoverPrimary();
+            }
+
+            primary = it->first->getPrimary();
+            if (primary == nullptr) {
+                LOG(ERROR) << "Client connection not initialized";
+                it->first->discoverPrimary();
+                return 1;
+            }
+
+            auto client = new cse498::Connection(primary->getAddr().c_str(), false, 8081);
             client->connect();
 
             cse498::unique_buf* buf = new cse498::unique_buf();
