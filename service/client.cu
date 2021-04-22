@@ -7,6 +7,9 @@
 #include <cmath>
 #include <string>
 
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
+
 #include <data_t.hh>
 #include <RequestTypes.hh>
 #include <RequestWrapper.hh>
@@ -150,6 +153,8 @@ int main(int argc, char **argv) {
     std::string testFile = "";
     bool ftEnabled = true;
     ft::Client* ftClient = new ft::Client();
+    int port = 8080;
+    pt::ptree root;
 
     char c;
     while ((c = getopt(argc, argv, "vf:t:")) != -1) {
@@ -159,6 +164,8 @@ int main(int argc, char **argv) {
                 break;
             case 'f':
                 cfgFile = optarg;
+                pt::read_json(cfgFile, root);
+                port = root.get<int>("port", port);
                 // optarg is the file
                 break;
             case 't':
@@ -209,7 +216,7 @@ int main(int argc, char **argv) {
                 return 1;
             }
 
-            auto client = new cse498::Connection(primary->getAddr().c_str(), false, 8081);
+            auto client = new cse498::Connection(primary->getAddr().c_str(), false, port);
             client->connect();
 
             cse498::unique_buf* buf = new cse498::unique_buf();
