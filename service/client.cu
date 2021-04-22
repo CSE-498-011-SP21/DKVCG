@@ -33,6 +33,9 @@ bool sendBatchAndRecvResponse(cse498::Connection *client,
             size_t size = serializedData.size();
             buf.cpyTo((char *) &size, sizeof(size_t));
             client->async_send(buf, sizeof(size_t));
+            if (!client->try_wait_for_sends()) {
+                return false;
+            }
             buf.cpyTo(serializedData.data(), serializedData.size());
             client->async_send(buf, serializedData.size());
             serializedData.clear();
@@ -49,6 +52,9 @@ bool sendBatchAndRecvResponse(cse498::Connection *client,
         size_t size = serializedData.size();
         buf.cpyTo((char *) &size, sizeof(size_t));
         client->async_send(buf, sizeof(size_t));
+        if (!client->try_wait_for_sends()) {
+            return false;
+        }
         buf.cpyTo(serializedData.data(), serializedData.size());
         client->async_send(buf, serializedData.size());
         serializedData.clear();
