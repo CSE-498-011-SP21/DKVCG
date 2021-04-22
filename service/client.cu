@@ -69,6 +69,7 @@ bool sendBatchAndRecvResponse(cse498::Connection *client,
     auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < batchsize; i++) {
         client->recv(buf, 4096);
+        LOG(DEBUG3) << "Recieved: " << buf.get();
     }
     auto end = std::chrono::high_resolution_clock::now();
 
@@ -83,8 +84,8 @@ void endConnection(cse498::Connection *client, cse498::unique_buf &buf) {
     client->send(buf, sizeof(size_t));
 }
 
-std::map<ft::Shard*, std::vector<RequestWrapper<unsigned long long, data_t *>>*> openTestFile(std::string file, ft::Client* ftClient) {
-    std::map<ft::Shard*, std::vector<RequestWrapper<unsigned long long, data_t *>>*> batches;
+std::vector<RequestWrapper<unsigned long long, data_t *>> openTestFile(std::string file) {
+    std::vector<RequestWrapper<unsigned long long, data_t *>> requestList;
     std::fstream fin;
     // TODO: deal w failure if unable to open
     fin.open(file, std::ios::in);
@@ -144,16 +145,26 @@ std::map<ft::Shard*, std::vector<RequestWrapper<unsigned long long, data_t *>>*>
         data_t* value_data = new data_t(value.size());
         strcpy(value_data->data, value.c_str());
 
-        ft::Shard* shard = ftClient->getShard((unsigned long long) key);
+        requestList.push_back({key, endRange, value_data, reqInt});
+    }
+
+    fin.close();
+
+    return requestList;
+}
+
+std::map<ft::Shard*, std::vector<RequestWrapper<unsigned long long, data_t *>>*> sortRequestsToShards(std::vector<RequestWrapper<unsigned long long, data_t *>> requestList, ft::Client* ftClient) {
+    std::map<ft::Shard*, std::vector<RequestWrapper<unsigned long long, data_t *>>*> batches;
+
+    for (auto request : requestList) {
+        ft::Shard* shard = ftClient->getShard(request.key);
 
         if (batches.find(shard) == batches.end()) {
             batches.insert({shard, new std::vector<RequestWrapper<unsigned long long, data_t *>>});
         }
 
-        batches.find(shard)->second->push_back({key, endRange, value_data, reqInt});
+        batches.find(shard)->second->push_back(request);
     }
-
-    fin.close();
 
     return batches;
 }
@@ -197,21 +208,18 @@ int main(int argc, char **argv) {
       }
     }
 
-    if (ftEnabled) {
-        std::map<ft::Shard*, std::vector<RequestWrapper<unsigned long long, data_t *>>*> batches;
-        if (testFile.compare("") == 0) {
-            for (int i = 0; i < 512; i++) {
-                ft::Shard* shard = ftClient->getShard((unsigned long long) (i + 1));
-
-                if (batches.find(shard) == batches.end()) {
-                    batches.insert({shard, new std::vector<RequestWrapper<unsigned long long, data_t *>>});
-                }
-                batches.find(shard)->second->push_back({(unsigned long long) (i + 1), 0, new data_t(32), REQUEST_INSERT});
-            }
-        } else {
-            batches = openTestFile(testFile, ftClient);
+    std::vector<RequestWrapper<unsigned long long, data_t *>> clientBatch;
+    if (testFile.compare("") == 0) {
+        for (int i = 0; i < 512; i++) {
+            clientBatch.push_back({(unsigned long long) (i + 1), 0, new data_t(32), REQUEST_INSERT});
         }
-        
+    }
+    else {
+        clientBatch = openTestFile(testFile);
+    }
+
+    if (ftEnabled) {
+        std::map<ft::Shard*, std::vector<RequestWrapper<unsigned long long, data_t *>>*> batches = sortRequestsToShards(clientBatch, ftClient);
 
         for (auto it = batches.begin(); it != batches.end(); ++it) {
             auto primary = it->first->getPrimary();
@@ -247,11 +255,6 @@ int main(int argc, char **argv) {
         cse498::unique_buf buf;
         uint64_t key = 1;
         client->register_mr(buf, FI_READ | FI_WRITE | FI_SEND | FI_RECV, key);
-
-        std::vector<RequestWrapper<unsigned long long, data_t *>> clientBatch;
-        for (int i = 0; i < 512; i++) {
-            clientBatch.push_back({(unsigned long long) (i + 1), 0, new data_t(32), REQUEST_INSERT});
-        }
 
         sendBatchAndRecvResponse(client, clientBatch, buf);
         endConnection(client, buf);
