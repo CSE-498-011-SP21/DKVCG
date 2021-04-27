@@ -149,7 +149,10 @@ int main(int argc, char **argv) {
         client = new NoCacheKVStoreClient<Model>(*ctx);
     }
 
-    client->logServer = new ft::Server();
+    auto commitFn = [client](auto batch) {
+        client->batch(batch);
+    };
+    client->logServer = new ft::Server(commitFn);
     int ftstatus =  client->logServer->initialize(cfgFile);
     if (ftstatus) {
       if (ftstatus == KVCG_EBADCONFIG) {

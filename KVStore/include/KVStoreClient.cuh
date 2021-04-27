@@ -53,6 +53,12 @@ public:
 
     virtual std::chrono::high_resolution_clock::time_point getStart() = 0;
 
+    void batch(std::vector<RequestWrapper<unsigned long long, data_t *>> req_vector) {
+        std::chrono::high_resolution_clock::time_point startTime = getStart();
+        std::shared_ptr<Communication> resBuf;
+        batch(req_vector, resBuf, startTime);
+    }
+
 };
 
 template<typename M, typename Slab_t, bool UseCache = true, bool UseGPU = true>
