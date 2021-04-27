@@ -89,63 +89,53 @@ std::vector<RequestWrapper<unsigned long long, data_t *>> openTestFile(std::stri
     std::fstream fin;
     // TODO: deal w failure if unable to open
     fin.open(file, std::ios::in);
+    LOG(DEBUG2) << "Opened workload file " << file;
 
     std::string line;
-    int reqInt;
-    std::string key_str;
-    unsigned long long key;
-    unsigned long long endRange;
-    std::string reqType;
-    std::string value;
+    std::string segment;
 
-    LOG(DEBUG4) << "Started reading data file: " << file;
+    RequestWrapper<unsigned long long, data_t*>* request;
     
     while(!fin.eof()) {
         getline(fin, line);
         if (line.empty()) break;
+        LOG(DEBUG4) << "Read Line: " << line;
+        
+        request = new RequestWrapper<unsigned long long, data_t*>;
 
         std::stringstream s(line);
 
-        LOG(DEBUG4) << "Read Line: " << line;
+        getline(s, segment, ',');
+        if (segment.empty()) break;
+        request->key = std::stoull(segment, nullptr, 10);
+        LOG(DEBUG4) << "Key: " << request->key;
 
-        getline(s, key_str, ',');
-    
-        if (key_str.empty()) break;
-        key = std::stoull(key_str, nullptr, 10);
-        
-        LOG(DEBUG4) << "Key: " << key_str;
+        getline(s, segment, ',');
+        if (segment.empty()) break;
+        request->endRange = std::stoull(segment, nullptr, 10);
+        LOG(DEBUG4) << "endRange: " << request->endRange;
 
-        getline(s, key_str, ',');
-    
-        if (key_str.empty()) break;
-        endRange = std::stoull(key_str, nullptr, 10);
-        
-        LOG(DEBUG4) << "endRange: " << key_str;
-
-        getline(s, reqType, ',');;
-        
-        LOG(DEBUG4) << "ReqType: " << reqType;
-
-        if (reqType.compare("put") == 0) {
-            reqInt = REQUEST_INSERT;
+        getline(s, segment, ',');
+        if (segment.compare("put") == 0) {
+            request->requestInteger = REQUEST_INSERT;
         }
-        else if (reqType.compare("get") == 0) {
-            reqInt = REQUEST_GET;
+        else if (segment.compare("get") == 0) {
+            request->requestInteger = REQUEST_GET;
         }
-        else if (reqType.compare("delete") == 0) {
-            reqInt = REQUEST_REMOVE;
+        else if (segment.compare("delete") == 0) {
+            request->requestInteger = REQUEST_REMOVE;
         }
-        else if (reqType.compare("range") == 0) {
-            reqInt = REQUEST_RQ;
+        else if (segment.compare("range") == 0) {
+            request->requestInteger = REQUEST_RQ;
         }
+        LOG(DEBUG4) << "ReqType: " << request->requestInteger;
         
-        getline(s, value);
-        LOG(DEBUG4) << "Value: " << value;
+        getline(s, segment);
+        request->value = new data_t(segment.size());
+        strcpy(request->value->data, segment.c_str());
+        LOG(DEBUG4) << "Value: " << request->value->data;
 
-        data_t* value_data = new data_t(value.size());
-        strcpy(value_data->data, value.c_str());
-
-        requestList.push_back({key, endRange, value_data, reqInt});
+        requestList.push_back(*request);
     }
 
     fin.close();
@@ -176,6 +166,7 @@ int main(int argc, char **argv) {
     bool ftEnabled = true;
     ft::Client* ftClient = new ft::Client();
     int port = 8080;
+    std::string address = "127.0.0.1";
     pt::ptree root;
 
     char c;
@@ -188,6 +179,7 @@ int main(int argc, char **argv) {
                 cfgFile = optarg;
                 pt::read_json(cfgFile, root);
                 port = root.get<int>("port", port);
+                address = root.get<std::string>("address", address);
                 // optarg is the file
                 break;
             case 't':
@@ -216,6 +208,7 @@ int main(int argc, char **argv) {
     }
     else {
         clientBatch = openTestFile(testFile);
+        LOG(DEBUG2) << "Finished reading test file";
     }
 
     if (ftEnabled) {
@@ -249,7 +242,7 @@ int main(int argc, char **argv) {
         }
     }
     else {
-        auto client = new cse498::Connection("127.0.0.1", false, 8081);
+        auto client = new cse498::Connection(address.c_str(), false, port);
         client->connect();
 
         cse498::unique_buf buf;
