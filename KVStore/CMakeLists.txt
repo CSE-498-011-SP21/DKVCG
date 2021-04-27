@@ -10,6 +10,7 @@ target_link_libraries(kvstore INTERFACE tbb)
 target_link_libraries(kvstore INTERFACE kvcg_stuff)
 target_link_libraries(kvstore INTERFACE commonInterfacesCUDA)
 target_link_libraries(kvstore INTERFACE canonicalstore)
+target_link_libraries(kvstore INTERFACE faulttolerance)
 
 # used for Doxygen
 get_target_property(PUBLIC_HEADER_DIR_KVSTORE kvstore INTERFACE_INCLUDE_DIRECTORIES)

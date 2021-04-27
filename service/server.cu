@@ -98,7 +98,6 @@ int main(int argc, char **argv) {
 
     ServerConf sconf;
     std::string cfgFile;
-    ft::Server* ftServer = new ft::Server();
     bool ftEnabled = true;
 
     char c;
@@ -119,16 +118,6 @@ int main(int argc, char **argv) {
     }
 
     sconf = ServerConf(cfgFile);
-    int ftstatus = ftServer->initialize(cfgFile);
-    if (ftstatus) {
-      if (ftstatus == KVCG_EBADCONFIG) {
-          LOG(WARNING) << "Fault-Tolerance disabled";
-          ftEnabled = false;
-      } else {
-          // fatal
-          return 1;
-      }
-    }
 
     std::vector<PartitionedSlabUnifiedConfig> conf;
     for (int i = 0; i < sconf.gpus; i++) {
@@ -160,6 +149,19 @@ int main(int argc, char **argv) {
         client = new NoCacheKVStoreClient<Model>(*ctx);
     }
 
+    client->logServer = new ft::Server();
+    int ftstatus =  client->logServer->initialize(cfgFile);
+    if (ftstatus) {
+      if (ftstatus == KVCG_EBADCONFIG) {
+          LOG(WARNING) << "Fault-Tolerance disabled";
+          ftEnabled = false;
+      } else {
+          // fatal
+          return 1;
+      }
+    }
+
+
     auto server = new cse498::Connection(sconf.address.c_str(), true, sconf.port);
     bool rerun = false;
 
@@ -186,7 +188,7 @@ int main(int argc, char **argv) {
             } while (rerun);
             DO_LOG(TRACE) << "Connection made";
 
-            clientHandler.submit([clientConnection, client, ftEnabled, ftServer]() {
+            clientHandler.submit([clientConnection, client, ftEnabled]() {
                 loadBalanceSet = true;
 
                 uint64_t key = 1;
@@ -227,7 +229,7 @@ int main(int argc, char **argv) {
                     std::shared_ptr<Communication> comm = std::make_shared<RemoteCommunication>(clientConnection, buf);
                     DO_LOG(TRACE) << "Batching";
                     if (ftEnabled) {
-                        if(ftServer->logRequest(clientBatch)) {
+                        if(client->logServer->logRequest(clientBatch)) {
                             // TBD: best way to handle. For now, do NOT run the batch locally
                             continue;
                         }
@@ -246,7 +248,7 @@ int main(int argc, char **argv) {
     }
 
     if (ftEnabled) {
-        ftServer->shutdownServer();
+        client->logServer->shutdownServer();
     }
 
     t.join();

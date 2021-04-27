@@ -9,6 +9,9 @@
 #include <exception>
 #include "KVStoreCtx.cuh"
 
+#include <faulttolerance/fault_tolerance.h>
+namespace ft = cse498::faulttolerance;
+
 #ifndef KVGPU_KVSTORECLIENT_CUH
 #define KVGPU_KVSTORECLIENT_CUH
 
@@ -30,6 +33,9 @@ public:
 
     virtual tbb::concurrent_vector<std::pair<std::chrono::high_resolution_clock::time_point, std::vector<std::chrono::high_resolution_clock::time_point>>>
     getCacheTimes() = 0;
+
+    // TBD: make private?
+    ft::Server* logServer;
 
     virtual float hitRate() = 0;
 
