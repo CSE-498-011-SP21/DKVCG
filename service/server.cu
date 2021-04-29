@@ -166,7 +166,13 @@ int main(int argc, char **argv) {
     }
 
 
-    auto server = new cse498::Connection(sconf.address.c_str(), true, sconf.port);
+    cse498::Connection* server;
+    if (ftEnabled) {
+        server = new cse498::Connection(client->logServer->getAddr().c_str(), true, sconf.port);
+    }
+    else {
+        server = new cse498::Connection(sconf.address.c_str(), true, sconf.port);
+    }
     bool rerun = false;
 
     cse498::threadpool clientHandler(sconf.threads);
