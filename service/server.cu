@@ -149,6 +149,7 @@ int main(int argc, char **argv) {
         client = new NoCacheKVStoreClient<Model>(*ctx);
     }
 
+
     auto commitFn = [client](auto batch) {
         client->batch(batch);
     };
