@@ -149,9 +149,11 @@ int main(int argc, char **argv) {
         client = new NoCacheKVStoreClient<Model>(*ctx);
     }
 
-
-    auto commitFn = [client](auto batch) {
-        client->batch(batch);
+    auto commitFn = [&](auto batch) {
+        loadBalanceSet = true;
+        std::shared_ptr<Communication> cComm = std::make_shared<LocalCommunication>(10000);
+        auto start = std::chrono::high_resolution_clock::now();
+        client->batch(batch, cComm, start);
     };
     client->logServer = new ft::Server(commitFn);
     int ftstatus =  client->logServer->initialize(cfgFile);
