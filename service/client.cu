@@ -141,6 +141,11 @@ std::vector<RequestWrapper<unsigned long long, data_t *>> openTestFile(std::stri
         LOG(DEBUG4) << "ReqType: " << request->requestInteger;
         
         getline(s, segment);
+        
+        if (!segment.empty() && segment[segment.length()-1] == '\r') {
+            segment.erase(segment.length()-1);
+        }
+
         request->value = new data_t(segment.size());
         strcpy(request->value->data, segment.c_str());
         LOG(DEBUG4) << "Value: " << request->value->data;
@@ -153,7 +158,8 @@ std::vector<RequestWrapper<unsigned long long, data_t *>> openTestFile(std::stri
     return requestList;
 }
 
-std::map<ft::Shard*, std::vector<RequestWrapper<unsigned long long, data_t *>>*> sortRequestsToShards(std::vector<RequestWrapper<unsigned long long, data_t *>> requestList, ft::Client* ftClient) {
+std::map<ft::Shard*, std::vector<RequestWrapper<unsigned long long, data_t *>>*> sortRequestsToShards(
+    std::vector<RequestWrapper<unsigned long long, data_t *>> requestList, ft::Client* ftClient) {
     std::map<ft::Shard*, std::vector<RequestWrapper<unsigned long long, data_t *>>*> batches;
 
     for (auto request : requestList) {
