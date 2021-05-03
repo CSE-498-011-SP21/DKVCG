@@ -66,16 +66,26 @@ bool sendBatchAndRecvResponse(cse498::Connection *client,
         }
     }
 
+    bool result = true;
+    std::shared_ptr<Communication> comm = std::make_shared<RemoteCommunication>(client, &buf);
     auto start = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < batchsize; i++) {
-        client->recv(buf, 4096);
-        LOG(DEBUG3) << "Recieved: " << buf.get();
+        Response resp;
+        if (comm->try_recv(resp)) {
+            if (resp.retry) {
+                result = false;
+                LOG(DEBUG3) << "Message Failed.";
+            }
+        }
+        else {
+            LOG(DEBUG3) << "Failed to Recieve.";
+        }
     }
     auto end = std::chrono::high_resolution_clock::now();
 
     std::cout << batchsize / std::chrono::duration<double>(end - start).count() << " Ops" << std::endl;
 
-    return true;
+    return result;
 }
 
 void endConnection(cse498::Connection *client, cse498::unique_buf &buf) {
@@ -148,6 +158,11 @@ std::map<ft::Shard*, std::vector<RequestWrapper<unsigned long long, data_t *>>*>
 
     for (auto request : requestList) {
         ft::Shard* shard = ftClient->getShard(request.key);
+
+        if (shard == nullptr) {
+            LOG(ERROR) << "Cound not find shard with range containing key: " << request.key;
+            continue;
+        }
 
         if (batches.find(shard) == batches.end()) {
             batches.insert({shard, new std::vector<RequestWrapper<unsigned long long, data_t *>>});

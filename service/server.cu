@@ -243,6 +243,11 @@ int main(int argc, char **argv) {
                     if (ftEnabled) {
                         if(client->logServer->logRequest(clientBatch)) {
                             // TBD: best way to handle. For now, do NOT run the batch locally
+                            size_t counter = 0;
+                            for (auto req : clientBatch) {
+                                comm->send(Response(counter, req.value, true));
+                                counter++;
+                            }
                             continue;
                         }
                     }
