@@ -38,6 +38,7 @@ add_compile_options("$<$<CONFIG:DEBUG>:-DDEBUG>")
 add_subdirectory(Allocator)
 add_subdirectory(LSlab)
 add_subdirectory(CanonicalStoreInterface)
+add_subdirectory(BTree)
 
 set(DOXYGEN_INPUT_DIR "${DOXYGEN_INPUT_DIR}" PARENT_SCOPE)
 set(DOXYGEN_PUBLIC_HEADERS "${DOXYGEN_PUBLIC_HEADERS}" PARENT_SCOPE)

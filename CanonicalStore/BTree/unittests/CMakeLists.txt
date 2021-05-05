@@ -1,0 +1,4 @@
+add_executable(btree_map_test btree_map_test.cu)
+target_link_libraries(btree_map_test gtest btree)
+
+add_test(BTREE_map_unittest btree_map_test)

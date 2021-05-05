@@ -5,6 +5,7 @@ add_library(kvstore INTERFACE)
 target_include_directories(kvstore INTERFACE include)
 target_link_libraries(kvstore INTERFACE pthread)
 target_link_libraries(kvstore INTERFACE lslab)
+target_link_libraries(kvstore INTERFACE btree)  # This may not be necessary
 target_link_libraries(kvstore INTERFACE kvcache)
 target_link_libraries(kvstore INTERFACE tbb)
 target_link_libraries(kvstore INTERFACE kvcg_stuff)
