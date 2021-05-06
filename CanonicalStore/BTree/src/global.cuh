@@ -39,6 +39,8 @@ enum class OperationT {
   QUERY = 2,
   DELETE = 3,
   NOP = 0,
+  // New operation that corresponds to kvcg's range query
+  RANGE_QUERY = 4,
 };
 
 #define WARP_MASK 0xFFFFFFFF

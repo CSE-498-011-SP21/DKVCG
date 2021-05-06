@@ -145,7 +145,7 @@ void validate_tree_strucutre(key_t* h_tree, std::vector<key_t> keys, size_t num_
   }
 
   std::sort(keys.begin(), keys.end());  // sort keys
-  for (int iKey = 0; iKey < keys.size(); iKey++) {
+  for (uint32_t iKey = 0; iKey < keys.size(); iKey++) {
     key_t treeKey = tree_pairs[iKey].first - 2;
     value_t treeVal = tree_pairs[iKey].second - 2;
     ASSERT_EQ(keys[iKey], treeKey);
@@ -166,7 +166,7 @@ TEST(BTreeMap, SimpleBuild) {
   std::vector<value_t> values;
   keys.reserve(numKeys);
   values.reserve(numKeys);
-  for (int iKey = 0; iKey < numKeys; iKey++) {
+  for (uint32_t iKey = 0; iKey < numKeys; iKey++) {
     keys.push_back(iKey);
   }
 
@@ -176,7 +176,7 @@ TEST(BTreeMap, SimpleBuild) {
   std::shuffle(keys.begin(), keys.end(), g);
 
   // assign the values
-  for (int iKey = 0; iKey < numKeys; iKey++) {
+  for (uint32_t iKey = 0; iKey < numKeys; iKey++) {
     values.push_back(keys[iKey]);
   }
 
@@ -223,7 +223,7 @@ TEST(BTreeMap, BuildSameKeys) {
   std::vector<value_t> values;
   keys.reserve(numKeys);
   values.reserve(numKeys);
-  for (int iKey = 0; iKey < numKeys / 2; iKey++) {
+  for (uint32_t iKey = 0; iKey < numKeys / 2; iKey++) {
     keys.push_back(iKey);
     keys.push_back(iKey);
     unique_keys.push_back(iKey);
@@ -235,7 +235,7 @@ TEST(BTreeMap, BuildSameKeys) {
   std::shuffle(keys.begin(), keys.end(), g);
 
   // assign the values
-  for (int iKey = 0; iKey < numKeys; iKey++) {
+  for (uint32_t iKey = 0; iKey < numKeys; iKey++) {
     values.push_back(keys[iKey]);
   }
 
@@ -282,7 +282,7 @@ TEST(BTreeMap, SearchRandomKeys) {
   std::vector<uint32_t> values;
   keys.reserve(numKeys);
   values.reserve(numKeys);
-  for (int iKey = 0; iKey < numKeys; iKey++) {
+  for (uint32_t iKey = 0; iKey < numKeys; iKey++) {
     keys.push_back(iKey);
   }
 
@@ -290,7 +290,7 @@ TEST(BTreeMap, SearchRandomKeys) {
   std::shuffle(keys.begin(), keys.end(), g);
 
   // assign the values
-  for (int iKey = 0; iKey < numKeys; iKey++) {
+  for (uint32_t iKey = 0; iKey < numKeys; iKey++) {
     values.push_back(keys[iKey]);
   }
 
@@ -315,7 +315,7 @@ TEST(BTreeMap, SearchRandomKeys) {
   std::vector<uint32_t> query_results;
   query_keys.reserve(numQueries * 2);
   query_results.resize(numQueries);
-  for (int iKey = 0; iKey < numQueries * 2; iKey++) {
+  for (uint32_t iKey = 0; iKey < numQueries * 2; iKey++) {
     query_keys.push_back(iKey);
   }
 
@@ -338,7 +338,7 @@ TEST(BTreeMap, SearchRandomKeys) {
 
   // Expected results
   std::vector<uint32_t> expected_results(numQueries, 0);
-  for (int iKey = 0; iKey < numQueries; iKey++) {
+  for (uint32_t iKey = 0; iKey < numQueries; iKey++) {
     if (query_keys[iKey] < numKeys) {
       expected_results[iKey] = query_keys[iKey];
     }
@@ -368,7 +368,7 @@ TEST(BTreeMap, DeleteRandomKeys) {
   std::vector<value_t> values;
   keys.reserve(numKeys);
   values.reserve(numKeys);
-  for (int iKey = 0; iKey < numKeys; iKey++) {
+  for (uint32_t iKey = 0; iKey < numKeys; iKey++) {
     keys.push_back(iKey);
   }
 
@@ -378,7 +378,7 @@ TEST(BTreeMap, DeleteRandomKeys) {
   std::shuffle(keys.begin(), keys.end(), g);
 
   // assign the values
-  for (int iKey = 0; iKey < numKeys; iKey++) {
+  for (uint32_t iKey = 0; iKey < numKeys; iKey++) {
     values.push_back(keys[iKey]);
   }
 
@@ -404,7 +404,7 @@ TEST(BTreeMap, DeleteRandomKeys) {
 
   // delete the last numDeletedKeys
   int starting_idx = keys.size() - numDeletedKeys;
-  for (int iKey = starting_idx; iKey < keys.size(); iKey++) {
+  for (uint32_t iKey = starting_idx; iKey < keys.size(); iKey++) {
     keys_deleted.push_back(keys[iKey]);
   }
 
@@ -449,7 +449,7 @@ TEST(BTreeMap, DeleteAllKeys) {
   std::vector<value_t> values;
   keys.reserve(numKeys);
   values.reserve(numKeys);
-  for (int iKey = 0; iKey < numKeys; iKey++) {
+  for (uint32_t iKey = 0; iKey < numKeys; iKey++) {
     keys.push_back(iKey);
   }
 
@@ -459,7 +459,7 @@ TEST(BTreeMap, DeleteAllKeys) {
   std::shuffle(keys.begin(), keys.end(), g);
 
   // assign the values
-  for (int iKey = 0; iKey < numKeys; iKey++) {
+  for (uint32_t iKey = 0; iKey < numKeys; iKey++) {
     values.push_back(keys[iKey]);
   }
 
@@ -512,7 +512,7 @@ TEST(BTreeMap, DeleteNoKeys) {
   std::vector<value_t> values;
   keys.reserve(numKeys);
   values.reserve(numKeys);
-  for (int iKey = 0; iKey < numKeys; iKey++) {
+  for (uint32_t iKey = 0; iKey < numKeys; iKey++) {
     keys.push_back(iKey);
   }
 
@@ -522,7 +522,7 @@ TEST(BTreeMap, DeleteNoKeys) {
   std::shuffle(keys.begin(), keys.end(), g);
 
   // assign the values
-  for (int iKey = 0; iKey < numKeys; iKey++) {
+  for (uint32_t iKey = 0; iKey < numKeys; iKey++) {
     values.push_back(keys[iKey]);
   }
 
@@ -545,7 +545,7 @@ TEST(BTreeMap, DeleteNoKeys) {
   uint32_t numDeletedKeys = 512;
   keys_deleted.reserve(numDeletedKeys);
 
-  for (int iKey = 0; iKey < numDeletedKeys; iKey++) {
+  for (uint32_t iKey = 0; iKey < numDeletedKeys; iKey++) {
     keys_deleted.push_back(numKeys + iKey);
   }
   std::shuffle(keys_deleted.begin(), keys_deleted.end(), g);
@@ -574,6 +574,127 @@ TEST(BTreeMap, DeleteNoKeys) {
   btree.free();
 }
 
+TEST(BTreeMap, RangeRandomKeys) {
+    GpuBTree::GpuBTreeMap<uint32_t, uint32_t> btree;
+
+    // Input number of keys
+    uint32_t numKeys = 2048;
+
+    // RNG
+    std::random_device rd;
+    std::mt19937 g(rd());
+
+    // Prepare the keys
+    std::vector<uint32_t> keys;
+    std::vector<uint32_t> values;
+    keys.reserve(numKeys);
+    values.reserve(numKeys);
+    for (uint32_t iKey = 0; iKey < numKeys; iKey++) {
+        keys.push_back(iKey);
+    }
+
+    // shuffle the keys
+    std::shuffle(keys.begin(), keys.end(), g);
+
+    auto to_value = [](uint32_t key) { return key; };
+
+    // assign the values
+    for (uint32_t iKey = 0; iKey < numKeys; iKey++) {
+        values.push_back(to_value(keys[iKey]));
+    }
+
+    // Move data to GPU
+    uint32_t *d_keys, *d_values;
+    CHECK_ERROR(memoryUtil::deviceAlloc(d_keys, numKeys));
+    CHECK_ERROR(memoryUtil::deviceAlloc(d_values, numKeys));
+    CHECK_ERROR(memoryUtil::cpyToDevice(keys.data(), d_keys, numKeys));
+    CHECK_ERROR(memoryUtil::cpyToDevice(values.data(), d_values, numKeys));
+
+    // Build the tree
+    GpuTimer build_timer;
+    build_timer.timerStart();
+    btree.insertKeys(d_keys, d_values, numKeys, SourceT::DEVICE);
+    build_timer.timerStop();
+
+    // Input number of queries
+    uint32_t numQueries = numKeys;
+    uint32_t averageLength = 8;
+    uint32_t resultsLenght = averageLength * numQueries * 2;
+    // Prepare the query keys
+    std::vector<uint32_t> query_keys_lower;
+    std::vector<uint32_t> query_keys_upper;
+    std::vector<uint32_t> query_results;
+    query_keys_lower.reserve(numQueries * 2);
+    query_keys_upper.reserve(numQueries * 2);
+    query_results.resize(resultsLenght);
+    for (uint32_t iKey = 0; iKey < numQueries * 2; iKey++) {
+        query_keys_lower.push_back(iKey);
+    }
+
+    // shuffle the queries
+    std::shuffle(query_keys_lower.begin(), query_keys_lower.end(), g);
+
+    // upper query bound
+    for (uint32_t iKey = 0; iKey < numQueries * 2; iKey++) {
+        query_keys_upper.push_back(query_keys_lower[iKey] + averageLength - 1);
+    }
+
+    // Move data to GPU
+    uint32_t *d_queries_lower, *d_queries_upper, *d_results;
+    CHECK_ERROR(memoryUtil::deviceAlloc(d_queries_lower, numQueries));
+    CHECK_ERROR(memoryUtil::deviceAlloc(d_queries_upper, numQueries));
+    CHECK_ERROR(memoryUtil::deviceAlloc(d_results, resultsLenght));
+    CHECK_ERROR(memoryUtil::deviceSet(d_results, resultsLenght, 0xff));
+    CHECK_ERROR(
+            memoryUtil::cpyToDevice(query_keys_lower.data(), d_queries_lower, numQueries));
+    CHECK_ERROR(
+            memoryUtil::cpyToDevice(query_keys_upper.data(), d_queries_upper, numQueries));
+
+    GpuTimer query_timer;
+    query_timer.timerStart();
+    btree.rangeQuery(d_queries_lower,
+                     d_queries_upper,
+                     d_results,
+                     averageLength,
+                     numQueries,
+                     SourceT::DEVICE);
+    query_timer.timerStop();
+
+    // Copy results back
+    CHECK_ERROR(memoryUtil::cpyToHost(d_results, query_results.data(), resultsLenght));
+
+    std::sort(keys.begin(), keys.end());
+
+    for (size_t iQuery = 0; iQuery < numQueries; iQuery++) {
+        auto query_min = query_keys_lower[iQuery];
+        auto query_max = query_keys_upper[iQuery];
+        auto offset = iQuery * averageLength * 2;
+        auto result_ptr = query_results.data() + offset;
+        auto key_iter = std::lower_bound(keys.begin(), keys.end(), query_min);
+        uint32_t cur_result_index = 0;
+        while (key_iter != keys.end() && *key_iter <= query_max) {
+            auto value = to_value(*key_iter);
+            EXPECT_EQ(*key_iter, result_ptr[cur_result_index]);  // expect key
+            cur_result_index++;
+            EXPECT_EQ(value, result_ptr[cur_result_index]);  // expect value
+            cur_result_index++;
+            key_iter++;
+        }
+        if (cur_result_index != averageLength * 2) {
+            EXPECT_EQ(result_ptr[cur_result_index],
+                      0xffffffff);  // at the end there should be nothing
+        }
+    }
+
+    // cleanup
+    cudaFree(d_keys);
+    cudaFree(d_values);
+    cudaFree(d_queries_lower);
+    cudaFree(d_queries_upper);
+    cudaFree(d_results);
+    btree.free();
+}
+
 TEST(BTreeMap, ConcurrentOpsInsertOnly) {
   using key_t = uint32_t;
   using value_t = uint32_t;
@@ -589,7 +710,7 @@ TEST(BTreeMap, ConcurrentOpsInsertOnly) {
   std::vector<value_t> values;
   keys.reserve(maxKeys);
   values.reserve(maxKeys);
-  for (int iKey = 0; iKey < maxKeys; iKey++) {
+  for (uint32_t iKey = 0; iKey < maxKeys; iKey++) {
     keys.push_back(iKey);
   }
 
@@ -599,7 +720,7 @@ TEST(BTreeMap, ConcurrentOpsInsertOnly) {
   std::shuffle(keys.begin(), keys.end(), g);
 
   // assign the values
-  for (int iKey = 0; iKey < maxKeys; iKey++) {
+  for (uint32_t iKey = 0; iKey < maxKeys; iKey++) {
     values.push_back(keys[iKey]);
   }
 
@@ -652,7 +773,7 @@ TEST(BTreeMap, ConcurrentOpsInsertNewQueryPast) {
   std::vector<value_t> values;
   keys.reserve(maxKeys);
   values.reserve(maxKeys);
-  for (int iKey = 0; iKey < maxKeys; iKey++) {
+  for (uint32_t iKey = 0; iKey < maxKeys; iKey++) {
     keys.push_back(iKey);
   }
 
@@ -662,7 +783,7 @@ TEST(BTreeMap, ConcurrentOpsInsertNewQueryPast) {
   std::shuffle(keys.begin(), keys.end(), g);
 
   // assign the values
-  for (int iKey = 0; iKey < maxKeys; iKey++) {
+  for (uint32_t iKey = 0; iKey < maxKeys; iKey++) {
     values.push_back(keys[iKey]);
   }
 
@@ -704,7 +825,7 @@ TEST(BTreeMap, ConcurrentOpsInsertNewQueryPast) {
   validate_tree_strucutre(h_tree, keys, initialNumKeys + insertionBatchSize);
 
   // Validate the query
-  for (int iKey = 0; iKey < queryBatchSize; iKey++) {
+  for (uint32_t iKey = 0; iKey < queryBatchSize; iKey++) {
     EXPECT_EQ(values[iKey], keys[iKey]);
   }
 
@@ -728,7 +849,7 @@ TEST(BTreeMap, ConcurrentOpsInsertNewQueryPastShuffled) {
   std::vector<value_t> values;
   keys.reserve(maxKeys);
   values.reserve(maxKeys);
-  for (int iKey = 0; iKey < maxKeys; iKey++) {
+  for (uint32_t iKey = 0; iKey < maxKeys; iKey++) {
     keys.push_back(iKey);
   }
 
@@ -738,7 +859,7 @@ TEST(BTreeMap, ConcurrentOpsInsertNewQueryPastShuffled) {
   std::shuffle(keys.begin(), keys.end(), g);
 
   // assign the values
-  for (int iKey = 0; iKey < maxKeys; iKey++) {
+  for (uint32_t iKey = 0; iKey < maxKeys; iKey++) {
     values.push_back(keys[iKey]);
   }
 
@@ -790,7 +911,7 @@ TEST(BTreeMap, ConcurrentOpsInsertNewQueryPastShuffled) {
   validate_tree_strucutre(h_tree, keys, totalBatchSize);
 
   // Validate the query
-  for (int iKey = 0; iKey < totalBatchSize; iKey++) {
+  for (uint32_t iKey = 0; iKey < totalBatchSize; iKey++) {
     if (ops[iKey] == OperationT::QUERY) {
       EXPECT_EQ(values[iKey], keys[iKey]);
     }

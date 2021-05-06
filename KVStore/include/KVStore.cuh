@@ -13,6 +13,7 @@
 #include <tbb/concurrent_queue.h>
 #include <tbb/concurrent_vector.h>
 #include <Slabs.cuh>
+#include <BTrees.cuh>
 
 // TODO implement EBR with 2 rounds of streams before freeing
 
@@ -28,7 +29,8 @@ template<typename M>
 class KVStore {
 public:
 
-    using Slab_t = Slabs<M>;
+//    using Slab_t = Slabs<M>;
+    using Slab_t = BTrees<M>;
 
     KVStore() : cache(std::make_shared<typename Cache::type>()), model(new M()) {
         slab = std::make_shared<Slab_t>(STANDARD_CONFIG, this->cache, model);

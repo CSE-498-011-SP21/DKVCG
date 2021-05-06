@@ -95,6 +95,28 @@ namespace GpuBTree {
             return cudaSuccess;
         }
 
+        cudaError_t rangeQuery(uint32_t *&root,
+                               KeyT *&d_queries_lower,
+                               KeyT *&d_queries_upper,
+                               ValueT *&d_range_results,
+                               SizeT &count,
+                               SizeT &range_lenght,
+                               cudaStream_t stream_id = 0) {
+            const uint32_t block_size = 512;
+            const uint32_t num_blocks = (count + block_size - 1) / block_size;
+            const uint32_t shared_bytes = 0;
+            kernels::range_b_tree<<<num_blocks, block_size, shared_bytes, stream_id>>>(
+                    root,
+                    d_queries_lower,
+                    d_queries_upper,
+                    d_range_results,
+                    count,
+                    range_lenght,
+                    _mem_allocator);
+
+            return cudaSuccess;
+        }
+
         cudaError_t deleteKeys(uint32_t *&root,
                                KeyT *&d_queries,
                                SizeT &count,
@@ -260,6 +282,41 @@ namespace GpuBTree {
             return cudaSuccess;
         }
 
+        cudaError_t rangeQuery(KeyT *queries_lower,
+                               KeyT *queries_upper,
+                               ValueT *results,
+                               SizeT average_length,
+                               SizeT count,
+                               SourceT source = SourceT::DEVICE) {
+            KeyT *d_queries_lower;
+            KeyT *d_queries_upper;
+            KeyT *d_results;
+            auto total_range_lenght = count * average_length * 2;
+            if (source == SourceT::HOST) {
+                CHECK_ERROR(memoryUtil::deviceAlloc(d_queries_lower, count));
+                CHECK_ERROR(memoryUtil::deviceAlloc(d_queries_upper, count));
+                CHECK_ERROR(memoryUtil::deviceAlloc(d_results, total_range_lenght));
+                CHECK_ERROR(memoryUtil::cpyToDevice(queries_lower, d_queries_lower, count));
+                CHECK_ERROR(memoryUtil::cpyToDevice(queries_upper, d_queries_upper, count));
+            } else {
+                d_queries_lower = queries_lower;
+                d_queries_upper = queries_upper;
+                d_results = results;
+            }
+
+            CHECK_ERROR(rangeQuery(
+                    _d_root, d_queries_lower, d_queries_upper, d_results, count, average_length));
+
+            if (source == SourceT::HOST) {
+                CHECK_ERROR(memoryUtil::cpyToHost(d_results, results, total_range_lenght));
+                CHECK_ERROR(memoryUtil::deviceFree(d_results));
+                CHECK_ERROR(memoryUtil::deviceFree(d_queries_lower));
+                CHECK_ERROR(memoryUtil::deviceFree(d_queries_upper));
+            }
+
+            return cudaSuccess;
+        }
+
         cudaError_t concurrentOperations(KeyT *keys,
                                          ValueT *values,
                                          OperationT *ops,
@@ -313,11 +370,12 @@ namespace GpuBTree {
 
 
     public:
-        explicit GpuBTreeMapSecondaryIndex(AllocatorT* mem_allocator = nullptr, int device_id = 0) : map(mem_allocator, device_id) {
+        explicit GpuBTreeMapSecondaryIndex(AllocatorT *mem_allocator = nullptr, int device_id = 0) : map(mem_allocator,
+                                                                                                         device_id) {
 
         }
 
-        cudaError_t init(AllocatorT mem_allocator, uint32_t* root_, int deviceId = 0) {
+        cudaError_t init(AllocatorT mem_allocator, uint32_t *root_, int deviceId = 0) {
             return map.init(mem_allocator, root_, deviceId);
         }
 
@@ -325,21 +383,22 @@ namespace GpuBTree {
             map.free();
         }
 
-        __host__ __device__ AllocatorT* getAllocator() { return map.getAllocator(); }
-        __host__ __device__ uint32_t* getRoot() { return map.getRoot(); }
+        __host__ __device__ AllocatorT *getAllocator() { return map.getAllocator(); }
+
+        __host__ __device__ uint32_t *getRoot() { return map.getRoot(); }
 
         /**
-         * This can only handle searches and insertions.
+         *
          * @param keys
          * @param values
          * @param ops
          * @param count
          * @return
          */
-        void diyConcurrentOperations(KeyT* keys,
-                                            ValueT* values,
-                                            OperationT* ops,
-                                            uint32_t count) {
+        void diyConcurrentOperations(KeyT *keys,
+                                     ValueT *values,
+                                     OperationT *ops,
+                                     uint32_t count) {
 
             std::vector<uint32_t> keys_narrow;
             std::vector<uint32_t> values_hash;
@@ -354,7 +413,7 @@ namespace GpuBTree {
                 if (ops[i] == OperationT::INSERT) {
                     uint8_t loc;
                     uint32_t hash;
-                    SIBucket<uint32_t, ValueT>* b = secondaryIndex.alloc(loc, hash);
+                    SIBucket<uint32_t, ValueT> *b = secondaryIndex.alloc(loc, hash);
 
                     std::pair<uint32_t, ValueT> p = {keys_narrow[i], values[i]};
                     (*b).set(loc, p);
@@ -362,11 +421,14 @@ namespace GpuBTree {
                 }
             }
 
-            // Split delete keys into their own kernel invocation
+            // Split delete keys and ranges into their own kernel invocations
             std::vector<uint32_t> delete_keys;
+            std::vector<uint32_t> range_query_keys;
             for (uint32_t i = 0; i < count; ++i) {
                 if (ops[i] == OperationT::DELETE) {
                     delete_keys.push_back(keys[i]);
+                } else if (ops[i] == OperationT::RANGE_QUERY) {
+                    range_query_keys.push_back(keys[i]);
                 }
             }
 
@@ -374,7 +436,23 @@ namespace GpuBTree {
             map.concurrentOperations(keys_narrow.data(), values_hash.data(), ops, count, SourceT::HOST);
 
             // Execute deletes on GPU (Deletes don't return anything, this may be an issue).
-            map.deleteKeys(delete_keys.data(), delete_keys.size(), SourceT::HOST);
+            if (!delete_keys.empty()) {
+                map.deleteKeys(delete_keys.data(), delete_keys.size(), SourceT::HOST);
+            }
+
+            // Executes range queries on the GPU (Also doesn't return anything, there just isn't space for it.)
+            // FIXME: Range queries are working, see the unit test. We'll need to adopt the rest of KVCG around doing
+            //  range queries and returning the results. There's no current way to return the results of a range query
+            //  through batchdata. I'm commenting this out because with only the concOps and delete kernels the
+            //  performance is garbage anyway. When it's time to add range queries comment this back in and follow the
+            //  method signature.
+//            if (!range_query_keys.empty()) {
+//                map.rangeQuery()
+//            }
+
+            // FIXME: Never found a good place to run this. Maybe keep a counter of insertions and run this when we get
+            //  through a lot of operations?
+//            map.compactTree();
 
             // Postprocess, hash lookup all of the old values.
             std::vector<uint32_t> dealloc;
@@ -382,22 +460,21 @@ namespace GpuBTree {
                 if (ops[i] == OperationT::QUERY) {
                     uint32_t val = values_hash[i];
                     std::pair<uint32_t, ValueT> p;
-                    SIBucket<uint32_t, ValueT>* b = secondaryIndex.getBucket(val);
+                    SIBucket<uint32_t, ValueT> *b = secondaryIndex.getBucket(val);
                     // 0xFF narrows val to just one byte.
                     b->get(val & 0xFF, p);
 
                     // If the key matches, replace the value with the looked up one.
-                    if(keys_narrow[i] == p.first) {
+                    if (keys_narrow[i] == p.first) {
                         values[i] = p.second;
                     }
                 }
-                // TODO: Removes are not supported in the kernel, but we need to free space in the secondary index.
-                else if(ops[i] == OperationT::DELETE){
+                else if (ops[i] == OperationT::DELETE) {
                     dealloc.push_back(values_hash[i]);
                 }
             }
-            for (auto &d : dealloc){
-                SIBucket<uint32_t,ValueT>* b = secondaryIndex.getBucket(d);
+            for (auto &d : dealloc) {
+                SIBucket<uint32_t, ValueT> *b = secondaryIndex.getBucket(d);
                 b->free(d & 0xFF);
             }
         }

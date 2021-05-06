@@ -21,6 +21,18 @@ target_link_libraries(zipfianWorkload PRIVATE tbbmalloc_proxy)
 target_link_libraries(zipfianWorkload PRIVATE rand)
 target_link_libraries(zipfianWorkload PRIVATE Boost::boost)
 
+add_library(zipfianWorkloadNoDelete SHARED zipfianWorkloadNoDelete.cu)
+target_link_libraries(zipfianWorkloadNoDelete PRIVATE kvstore)
+target_link_libraries(zipfianWorkloadNoDelete PRIVATE tbbmalloc_proxy)
+target_link_libraries(zipfianWorkloadNoDelete PRIVATE rand)
+target_link_libraries(zipfianWorkloadNoDelete PRIVATE Boost::boost)
+
+add_library(zipfianWorkloadRangeNoDelete SHARED zipfianWorkloadRangeNoDelete.cu)
+target_link_libraries(zipfianWorkloadRangeNoDelete PRIVATE kvstore)
+target_link_libraries(zipfianWorkloadRangeNoDelete PRIVATE tbbmalloc_proxy)
+target_link_libraries(zipfianWorkloadRangeNoDelete PRIVATE rand)
+target_link_libraries(zipfianWorkloadRangeNoDelete PRIVATE Boost::boost)
+
 add_library(zipfianWorkloadSwitch SHARED zipfianWorkloadSwitch.cu)
 target_link_libraries(zipfianWorkloadSwitch PRIVATE kvstore)
 target_link_libraries(zipfianWorkloadSwitch PRIVATE tbbmalloc_proxy)
