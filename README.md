@@ -1,6 +1,31 @@
 # DKVCG
 
-DKVCG is a cooperative GPU-CPU distributed key value store.
+DKVCG is a cooperative GPU-CPU distributed key value store. 
+It is built off of KVCG (https://github.com/sss-lehigh/KVCG), a state-of-the art key value store developed at Lehigh University. 
+This was a project used in the Advanced Distributed Systems course at Lehigh University in order to teach distributed systems.
+The instructor of the course was Prof. Roberto Palmieri.
+
+## Contributors to KVCG and DKVCG
+
+- Jacob Nelson
+- Athicha Srivirote
+- dePaul Miller
+- Matthew West
+- Evan Hruskar
+- Roberto Palmieri
+- Jack Byers
+- Amanda Baran
+- Olivia Grimes
+- Vasilios Walsh
+- Alexander Schiffman
+- James Johnson
+- Maxim Vezenov
+- Jacob Oakman
+- Michael Bentley
+- Cody D'Ambrosio
+- Haowei Liu
+- Jianzhi Han
+- Ahmed Hassan
 
 ## Dependencies
 
