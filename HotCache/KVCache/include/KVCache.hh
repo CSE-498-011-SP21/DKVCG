@@ -250,8 +250,7 @@ namespace kvgpu {
         }
 
 
-        std::tuple<LockingPair<K, V> *, locktype, size_t>
-        get_with_log(K key, unsigned hash, const Model<K> &mfn) {
+        std::tuple<LockingPair<K, V> *, locktype, size_t> get_with_log(K key, unsigned hash, const Model<K> &mfn) {
             unsigned setIdx = hash % SETS;
             LockingPair<K, V> *set = map[setIdx];
             locktype unique(mtx[setIdx]);
